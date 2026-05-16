@@ -31,7 +31,12 @@ SATANI_FEATURES = [
     "Multi-protocol remote command execution",
     "Process and service control",
     "Wake-on-LAN with quantum timing",
-    "Agentless remote management"
+    "Agentless remote management",
+    "Drone frequency detection and jamming",
+    "GPS signal spoofing",
+    "Aircraft radar scanning",
+    "Satellite beacon cloning",
+    "Stealth network infiltration"
 ]
 
 def print_header():
@@ -108,6 +113,9 @@ def build_framework(rebuild=False, verbose=False):
     agentless_obj = build_dir / 'agentless.obj'
     agentless_adv_obj = build_dir / 'agentless_adv.obj'
     agentless_linux_obj = build_dir / 'agentless_linux.obj'
+    drone_obj = build_dir / 'drone.obj'
+    aircraft_obj = build_dir / 'aircraft.obj'
+    industrial_obj = build_dir / 'industrial.obj'
     main_obj = build_dir / 'main.obj'
     executable = build_dir / 'satani.exe'
     
@@ -170,6 +178,18 @@ def build_framework(rebuild=False, verbose=False):
         c_cmd = ['cl', '-c', f'-Fo{agentless_linux_obj}', f'-I{include_dir}', str(c_dir / 'agentless_linux.c')]
         run_command(c_cmd, verbose=verbose)
         
+        print(f"{Colors.BLUE}[+] Compiling C code (drone_warfare.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{drone_obj}', f'-I{include_dir}', str(c_dir / 'drone_warfare.c')]
+        run_command(c_cmd, verbose=verbose)
+        
+        print(f"{Colors.BLUE}[+] Compiling C code (aircraft_satellite.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{aircraft_obj}', f'-I{include_dir}', str(c_dir / 'aircraft_satellite.c')]
+        run_command(c_cmd, verbose=verbose)
+        
+        print(f"{Colors.BLUE}[+] Compiling C code (industrial_control.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{industrial_obj}', f'-I{include_dir}', str(c_dir / 'industrial_control.c')]
+        run_command(c_cmd, verbose=verbose)
+        
         # Compile C++
         print(f"{Colors.BLUE}[+] Compiling C++ code (main.cpp)...{Colors.END}")
         cpp_cmd = ['cl', '-c', f'-Fo{main_obj}', f'-I{include_dir}', str(cpp_dir / 'main.cpp')]
@@ -181,7 +201,16 @@ def build_framework(rebuild=False, verbose=False):
             'link',
             f'-OUT:{executable}',
             str(checksum_obj),
+            str(network_obj),
             str(scan_obj),
+            str(exploit_obj),
+            str(exec_obj),
+            str(agentless_obj),
+            str(agentless_adv_obj),
+            str(agentless_linux_obj),
+            str(drone_obj),
+            str(aircraft_obj),
+            str(industrial_obj),
             str(main_obj),
             'iphlpapi.lib',
             'ws2_32.lib',

