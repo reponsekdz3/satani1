@@ -6,9 +6,12 @@
 #include <ctime>
 #include <map>
 #include <algorithm>
+#include <chrono>
+#include <thread>
+#include <sstream>
+#include <iomanip>
 #include "satani.h"
 
-// Color output for terminal
 class Colors {
 public:
     static constexpr const char* RED = "\033[1;31m";
@@ -16,21 +19,20 @@ public:
     static constexpr const char* YELLOW = "\033[1;33m";
     static constexpr const char* BLUE = "\033[1;34m";
     static constexpr const char* CYAN = "\033[1;36m";
+    static constexpr const char* MAGENTA = "\033[1;35m";
     static constexpr const char* RESET = "\033[0m";
 };
 
-// Function to print colored header
 void print_header() {
     std::cout << Colors::CYAN << R"(
     ╔═══════════════════════════════════════════════════════════╗
-    ║          SATANI - Cybersecurity Framework v1.0           ║
-    ║              Network Scanning & Control Tool             ║
-    ║                  [AUTHORIZED USE ONLY]                   ║
+    ║          SATANI - Cybersecurity Framework v2.0           ║
+    ║              Advanced Network Scanner & Analyzer          ║
+    ║          [AUTHORIZED PENETRATION TESTING ONLY]            ║
     ╚═══════════════════════════════════════════════════════════╝
     )" << Colors::RESET << std::endl;
 }
 
-// Function to print device information in formatted table
 void print_device_table(const satani_device_t* devices, int count) {
     if (count == 0) {
         std::cout << Colors::YELLOW << "No devices found in network scan." << Colors::RESET << std::endl;
@@ -38,7 +40,7 @@ void print_device_table(const satani_device_t* devices, int count) {
     }
 
     std::cout << Colors::BLUE << "\n========== NETWORK DEVICES DISCOVERED ==========" << Colors::RESET << std::endl;
-    std::cout << std::string(120, '-') << std::endl;
+    std::cout << std::string(140, '-') << std::endl;
 
     for (int i = 0; i < count; i++) {
         std::cout << Colors::GREEN << "[Device " << (i + 1) << "]" << Colors::RESET << std::endl;
@@ -55,17 +57,18 @@ void print_device_table(const satani_device_t* devices, int count) {
         if (devices[i].port_count == 0) {
             std::cout << "None detected";
         } else {
+            std::cout << "[";
             for (int j = 0; j < devices[i].port_count; j++) {
                 std::cout << devices[i].open_ports[j];
                 if (j < devices[i].port_count - 1) std::cout << ", ";
             }
+            std::cout << "]";
         }
         std::cout << std::endl;
-        std::cout << std::string(120, '-') << std::endl;
+        std::cout << std::string(140, '-') << std::endl;
     }
 }
 
-// Function to print device information as JSON
 void print_devices_as_json(const satani_device_t* devices, int count) {
     std::cout << "[\n";
     for (int i = 0; i < count; i++) {
@@ -76,6 +79,8 @@ void print_devices_as_json(const satani_device_t* devices, int count) {
         std::cout << "    \"os\": \"" << devices[i].os << "\",\n";
         std::cout << "    \"device_type\": \"" << devices[i].device_type << "\",\n";
         std::cout << "    \"location\": \"" << devices[i].location << "\",\n";
+        std::cout << "    \"country\": \"" << (devices[i].country[0] ? devices[i].country : "Unknown") << "\",\n";
+        std::cout << "    \"region\": \"" << (devices[i].region[0] ? devices[i].region : "Unknown") << "\",\n";
         std::cout << "    \"open_ports\": [";
         for (int j = 0; j < devices[i].port_count; j++) {
             std::cout << devices[i].open_ports[j];
@@ -89,14 +94,12 @@ void print_devices_as_json(const satani_device_t* devices, int count) {
     std::cout << "]\n";
 }
 
-// Function to print summary statistics
 void print_scan_summary(const satani_device_t* devices, int count) {
     if (count == 0) return;
 
     std::cout << Colors::CYAN << "\n====== SCAN SUMMARY ======" << Colors::RESET << std::endl;
     std::cout << "Total Devices Found:     " << count << std::endl;
 
-    // Count by OS
     std::map<std::string, int> os_count;
     std::map<std::string, int> device_type_count;
     int total_ports = 0;
@@ -107,7 +110,6 @@ void print_scan_summary(const satani_device_t* devices, int count) {
         device_type_count[devices[i].device_type]++;
         total_ports += devices[i].port_count;
 
-        // Check for vulnerabilities
         if (satani_exploit_device(&devices[i]) > 0) {
             devices_with_vulnerabilities++;
         }
@@ -127,7 +129,6 @@ void print_scan_summary(const satani_device_t* devices, int count) {
     std::cout << "Devices with Vulns:     " << Colors::RED << devices_with_vulnerabilities << Colors::RESET << std::endl;
 }
 
-// Function to test exploitation on a device
 void test_exploitation(const satani_device_t* device) {
     std::cout << Colors::YELLOW << "\n[*] Testing exploits on " << device->ip << "..." << Colors::RESET << std::endl;
     
@@ -136,9 +137,11 @@ void test_exploitation(const satani_device_t* device) {
     if (vuln_count > 0) {
         std::cout << Colors::RED << "[!] WARNING: " << vuln_count << " potential vulnerabilities found!" << Colors::RESET << std::endl;
         std::cout << "    Device Type: " << device->device_type << std::endl;
+        std::cout << "    OS: " << device->os << std::endl;
         std::cout << "    Open Ports: ";
         for (int i = 0; i < device->port_count; i++) {
-            std::cout << device->open_ports[i] << " ";
+            std::cout << device->open_ports[i];
+            if (i < device->port_count - 1) std::cout << ", ";
         }
         std::cout << std::endl;
     } else {
@@ -146,22 +149,23 @@ void test_exploitation(const satani_device_t* device) {
     }
 }
 
-// Function to print help
 void print_help() {
     std::cout << Colors::CYAN << "\nUsage: satani <command> [options]\n" << Colors::RESET;
     std::cout << "\nAvailable Commands:\n";
     std::cout << "  scan [--subnet <subnet>] [--json] [--output <file>]   Scan network for devices\n";
-    std::cout << "  exploit <ip>                                         Test exploits on device\n";
-    std::cout << "  control <ip> <action>                               Control device (shutdown/restart/lock/wake)\n";
-    std::cout << "  execute <ip> <command>                              Execute command on device (requires SSH)\n";
-    std::cout << "  filter <field> <value>                              Filter devices by field\n";
-    std::cout << "  help                                                Show this help message\n";
-    std::cout << "  version                                             Show version information\n";
+    std::cout << "  exploit <ip>                                          Test exploits on device\n";
+    std::cout << "  control <ip> <action>                                 Control device (shutdown/restart/lock/wake)\n";
+    std::cout << "  execute <ip> <command>                                Execute command on device (requires SSH)\n";
+    std::cout << "  filter <field> <value>                                Filter devices by field\n";
+    std::cout << "  ports <ip> <port_range>                               Scan specific port range on target\n";
+    std::cout << "  help                                                  Show this help message\n";
+    std::cout << "  version                                               Show version information\n";
     std::cout << "\nExamples:\n";
     std::cout << "  satani scan\n";
-    std::cout << "  satani scan --json --output results.json\n";
+    std::cout << "  satani scan --subnet 192.168.1.0/24 --json --output results.json\n";
     std::cout << "  satani exploit 192.168.1.100\n";
-    std::cout << "  satani filter os Linux\n";
+    std::cout << "  satani filter os Windows\n";
+    std::cout << "  satani ports 192.168.1.1 1-1000\n";
     std::cout << std::endl;
 }
 
@@ -180,8 +184,9 @@ int main(int argc, char* argv[]) {
         return 0;
     } 
     else if (command == "version" || command == "-v" || command == "--version") {
-        std::cout << "Satani Cybersecurity Framework v1.0" << std::endl;
+        std::cout << "Satani Cybersecurity Framework v2.0" << std::endl;
         std::cout << "Built with Assembly, C, and C++" << std::endl;
+        std::cout << "Powerful Low-Level Network Scanning" << std::endl;
         return 0;
     }
     else if (command == "scan") {
@@ -189,7 +194,6 @@ int main(int argc, char* argv[]) {
         bool json_output = false;
         std::string output_file;
 
-        // Parse arguments
         for (int i = 2; i < argc; i++) {
             std::string arg = argv[i];
             if (arg == "--subnet" && i + 1 < argc) {
@@ -203,12 +207,18 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        auto start_time = std::chrono::high_resolution_clock::now();
         std::cout << Colors::YELLOW << "[*] Starting network scan..." << Colors::RESET << std::endl;
         
         satani_device_t* devices = nullptr;
         int count = 0;
 
         if (satani_network_scan(subnet.c_str(), &devices, &count)) {
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+            
+            std::cout << Colors::GREEN << "[+] Scan completed in " << duration.count() << "ms" << Colors::RESET << std::endl;
+            
             if (json_output) {
                 if (!output_file.empty()) {
                     std::ofstream ofs(output_file);
@@ -328,7 +338,7 @@ int main(int argc, char* argv[]) {
                 if (match) {
                     matches++;
                     std::cout << Colors::GREEN << "[" << matches << "]" << Colors::RESET << " " << devices[i].ip 
-                             << " (" << devices[i].device_type << ") - " << devices[i].os << std::endl;
+                         << " (" << devices[i].device_type << ") - " << devices[i].os << std::endl;
                 }
             }
 
@@ -354,7 +364,7 @@ int main(int argc, char* argv[]) {
         std::cin.get();
 
         satani_device_t control_target;
-        memset(&control_target, 0, sizeof(control_target));
+        fast_memset(&control_target, 0, sizeof(control_target));
         strncpy_s(control_target.ip, sizeof(control_target.ip), target_ip.c_str(), _TRUNCATE);
 
         int result = satani_control_device(&control_target, action.c_str());
