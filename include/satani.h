@@ -170,7 +170,7 @@ typedef struct {
     char manufacturer[256];
     char product_name[256];
     int interface_number;
-    WINUSB_INTERFACE_HANDLE handle;
+    void* handle;
     BOOL connected;
 } satani_usb_device_t;
 
@@ -281,6 +281,10 @@ void fast_memcpy(void* dest, const void* src, size_t count);
 unsigned int compute_crc32(unsigned char* buffer, int length);
 unsigned short byte_swap_16(unsigned short val);
 unsigned int byte_swap_32(unsigned int val);
+
+/* ==================== Wake-on-LAN ==================== */
+
+int satani_send_wol(const char* mac_address, const char* broadcast_ip);
 
 #ifdef __cplusplus
 }

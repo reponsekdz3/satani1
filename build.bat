@@ -27,14 +27,14 @@ if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
 
 REM Object and executable files
 set CHECKSUM_OBJ=%BUILD_DIR%\checksum.obj
-set NETWORK_OBJ=%BUILD_DIR%\network.obj
 set SCAN_OBJ=%BUILD_DIR%\scan.obj
+set EXEC_REAL_OBJ=%BUILD_DIR%\exec_real.obj
 set MAIN_OBJ=%BUILD_DIR%\main.obj
 set EXECUTABLE=%BUILD_DIR%\satani.exe
 
 REM Check command line arguments
 if "%1"=="--rebuild" goto rebuild
-if "%1"==-r goto rebuild
+if "%1"=="-r" goto rebuild
 if "%1"=="--clean" goto clean
 
 REM Normal build (incremental)
@@ -80,18 +80,7 @@ if exist "%ASM_DIR%\checksum.asm" (
     )
 )
 
-if exist "%ASM_DIR%\network.asm" (
-    ml64 -c -Fo"%NETWORK_OBJ%" "%ASM_DIR%\network.asm" 2>nul
-    if %ERRORLEVEL% NEQ 0 (
-        echo [!] Network assembly step skipped or failed
-        del "%NETWORK_OBJ%" 2>nul
-        set NETWORK_OBJ=
-    ) else (
-        echo     - network.asm compiled
-    )
-)
-
-REM Compile C
+REM Compile C (scan.c - core scanning functionality)
 echo [+] Compiling C module (scan.c)...
 cl -c -Fo"%SCAN_OBJ%" -I"%INCLUDE_DIR%" "%C_DIR%\scan.c" /W3 /O2
 if %ERRORLEVEL% NEQ 0 (
@@ -111,7 +100,6 @@ REM Link
 echo [+] Linking object files...
 set LINK_OBJS=
 if exist "%CHECKSUM_OBJ%" set LINK_OBJS=%LINK_OBJS% "%CHECKSUM_OBJ%"
-if exist "%NETWORK_OBJ%" set LINK_OBJS=%LINK_OBJS% "%NETWORK_OBJ%"
 if exist "%SCAN_OBJ%" set LINK_OBJS=%LINK_OBJS% "%SCAN_OBJ%"
 if exist "%MAIN_OBJ%" set LINK_OBJS=%LINK_OBJS% "%MAIN_OBJ%"
 

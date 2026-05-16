@@ -593,7 +593,7 @@ int satani_port_is_open(int* ports, int port_count, int target_port) {
     return 0;
 }
 
-static int send_wol_packet(const char* mac_str) {
+static int send_wol_packet(const char* mac_str, const char* broadcast_ip) {
     unsigned char mac[6];
     if (sscanf_s(mac_str, "%2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx",
                  &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]) != 6) {
@@ -610,7 +610,7 @@ static int send_wol_packet(const char* mac_str) {
     fast_memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(9);
-    addr.sin_addr.s_addr = inet_addr("255.255.255.255");
+    addr.sin_addr.s_addr = broadcast_ip ? inet_addr(broadcast_ip) : inet_addr("255.255.255.255");
     
     unsigned char packet[102];
     fast_memset(packet, 0xFF, 6);
@@ -621,6 +621,10 @@ static int send_wol_packet(const char* mac_str) {
     int result = sendto(sock, (const char*)packet, sizeof(packet), 0, (struct sockaddr*)&addr, sizeof(addr));
     closesocket(sock);
     return result == sizeof(packet);
+}
+
+int satani_send_wol(const char* mac_address, const char* broadcast_ip) {
+    return send_wol_packet(mac_address, broadcast_ip ? broadcast_ip : "255.255.255.255");
 }
 
 int satani_run_command(const char* ip, const char* command, char* output, size_t out_size) {
@@ -668,9 +672,9 @@ int satani_control_device(const satani_device_t* target, const char* action) {
         char cmd[512];
         sprintf_s(cmd, sizeof(cmd), "shutdown /r /m \\\\%s /t 60 /c \"Satani remote restart\"", target->ip);
         return system(cmd);
-    } else if (strcmp(action, "wake") == 0) {
-        return send_wol_packet(target->mac) ? 0 : -1;
-    } else if (strcmp(action, "lock") == 0) {
+} else if (strcmp(action, "wake") == 0) {
+         return send_wol_packet(target->mac, NULL) ? 0 : -1;
+     } else if (strcmp(action, "lock") == 0) {
         char cmd[512];
         sprintf_s(cmd, sizeof(cmd), "psexec \\\\%s -accepteula -c rundll32.exe user32.dll,LockWorkStation", target->ip);
         return system(cmd);

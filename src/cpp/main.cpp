@@ -156,16 +156,23 @@ void print_help() {
     std::cout << "  exploit <ip>                                          Test exploits on device\n";
     std::cout << "  control <ip> <action>                                 Control device (shutdown/restart/lock/wake)\n";
     std::cout << "  execute <ip> <command>                                Execute command on device (requires SSH)\n";
-    std::cout << "  filter <field> <value>                                Filter devices by field\n";
     std::cout << "  ports <ip> <port_range>                               Scan specific port range on target\n";
+    std::cout << "  filter <field> <value>                                Filter devices by field\n";
+    std::cout << "  wol <mac> [broadcast_ip]                              Send Wake-on-LAN packet\n";
     std::cout << "  help                                                  Show this help message\n";
     std::cout << "  version                                               Show version information\n";
+    std::cout << "\nActions for 'control':\n";
+    std::cout << "  shutdown    - Shutdown target device remotely\n";
+    std::cout << "  restart     - Restart target device remotely\n";
+    std::cout << "  lock        - Lock target workstation\n";
+    std::cout << "  wake        - Wake target device via Wake-on-LAN\n";
     std::cout << "\nExamples:\n";
     std::cout << "  satani scan\n";
     std::cout << "  satani scan --subnet 192.168.1.0/24 --json --output results.json\n";
     std::cout << "  satani exploit 192.168.1.100\n";
     std::cout << "  satani filter os Windows\n";
     std::cout << "  satani ports 192.168.1.1 1-1000\n";
+    std::cout << "  satani wol 00:11:22:33:44:55 192.168.1.255\n";
     std::cout << std::endl;
 }
 
@@ -398,6 +405,56 @@ int main(int argc, char* argv[]) {
             std::cout << output << std::endl;
         } else {
             std::cout << Colors::YELLOW << "[!] " << output << Colors::RESET << std::endl;
+            return 1;
+        }
+    }
+    else if (command == "ports") {
+        if (argc < 4) {
+            std::cerr << "Usage: satani ports <ip> <port_range>" << std::endl;
+            return 1;
+        }
+        
+        std::string target_ip = argv[2];
+        std::string port_range = argv[3];
+        
+        int start_port = 1;
+        int end_port = 1000;
+        size_t dash_pos = port_range.find('-');
+        if (dash_pos != std::string::npos) {
+            start_port = std::stoi(port_range.substr(0, dash_pos));
+            end_port = std::stoi(port_range.substr(dash_pos + 1));
+        }
+        
+        std::cout << Colors::YELLOW << "[*] Scanning ports " << start_port << "-" << end_port << " on " << target_ip << "..." << Colors::RESET << std::endl;
+        
+        satani_port_info_t* ports = NULL;
+        int port_count = 0;
+        
+        if (satani_detailed_port_scan(target_ip.c_str(), start_port, end_port, &ports, &port_count)) {
+            std::cout << Colors::GREEN << "[+] Found " << port_count << " open ports:\n" << Colors::RESET;
+            for (int i = 0; i < port_count; i++) {
+                std::cout << "  Port " << ports[i].port << "/" << (ports[i].protocol == PROTOCOL_TCP ? "TCP" : "UDP") << "\n";
+            }
+            satani_free_ports(ports);
+        } else {
+            std::cout << Colors::YELLOW << "[!] No open ports found or scan failed." << Colors::RESET << std::endl;
+        }
+    }
+    else if (command == "wol") {
+        if (argc < 3) {
+            std::cerr << "Usage: satani wol <mac_address> [broadcast_ip]" << std::endl;
+            return 1;
+        }
+        
+        std::string mac = argv[2];
+        std::string broadcast = argc > 3 ? argv[3] : "255.255.255.255";
+        
+        std::cout << Colors::YELLOW << "[*] Sending Wake-on-LAN packet to " << mac << "..." << Colors::RESET << std::endl;
+        
+        if (satani_send_wol(mac.c_str(), broadcast.c_str()) == 0) {
+            std::cout << Colors::GREEN << "[+] Wake-on-LAN packet sent successfully." << Colors::RESET << std::endl;
+        } else {
+            std::cout << Colors::RED << "[!] Failed to send Wake-on-LAN packet." << Colors::RESET << std::endl;
             return 1;
         }
     }

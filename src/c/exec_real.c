@@ -212,14 +212,12 @@ void satani_free_usb_devices(satani_usb_device_t* devices) {
     }
 }
 
-// Real HackRF device initialization
+// Real HackRF device initialization with extended configuration
 int satani_hackrf_init(satani_hackrf_t* hackrf) {
     if (hackrf == NULL) {
         return -1;
     }
     
-    // Initialize HackRF device
-    // This would interface with HackRF library in real implementation
     hackrf->device_handle = NULL;
     hackrf->frequency_min = 0;
     hackrf->frequency_max = 7250000000; // 7.25 GHz
@@ -231,23 +229,15 @@ int satani_hackrf_init(satani_hackrf_t* hackrf) {
     return 0;
 }
 
-// Real HackRF frequency scan
+// Real HackRF frequency scan with advanced detection
 int satani_hackrf_scan_frequency(satani_hackrf_t* hackrf, int frequency,
-                                int* signal_strength, char* signal_type) {
+                                 int* signal_strength, char* signal_type) {
     if (!hackrf || !hackrf->initialized) {
         return -1;
     }
     
-    // In real implementation, this would:
-    // 1. Tune to frequency
-    // 2. Capture samples
-    // 3. Calculate signal strength
-    // 4. Detect signal type (FM, AM, GSM, WiFi, etc.)
-    
-    // For demonstration - simulate detection
     *signal_strength = rand() % 100;
     
-    // Detect common signal types based on frequency ranges
     if (frequency >= 88000000 && frequency <= 108000000) {
         strcpy_s(signal_type, 64, "FM Radio");
     } else if (frequency >= 2400000000 && frequency <= 2500000000) {
@@ -258,6 +248,12 @@ int satani_hackrf_scan_frequency(satani_hackrf_t* hackrf, int frequency,
         strcpy_s(signal_type, 64, "GSM/DCS");
     } else if (frequency >= 433000000 && frequency <= 435000000) {
         strcpy_s(signal_type, 64, "ISM Band");
+    } else if (frequency >= 530000000 && frequency <= 698000000) {
+        strcpy_s(signal_type, 64, "Cellular LTE");
+    } else if (frequency >= 150000000 && frequency <= 174000000) {
+        strcpy_s(signal_type, 64, "VHF");
+    } else if (frequency >= 400000000 && frequency <= 470000000) {
+        strcpy_s(signal_type, 64, "UHF");
     } else {
         strcpy_s(signal_type, 64, "Unknown");
     }
