@@ -185,6 +185,19 @@ typedef struct {
     int swarm_member;
     int swarm_leader;
     int swarm_size;
+    // Enhanced drone fields
+    int data_rate;
+    int encryption_supported;
+    int max_range;
+    int max_altitude;
+    int hold_position;
+    int follow_me;
+    int orbit_mode;
+    int waypoint_mode;
+    int signal_quality;
+    int gps_satellites_tracked;
+    int gnss_status;
+    char protocol[32];
 } satani_drone_t;
 
 /* ==================== Advanced Avionics Structures ==================== */
@@ -215,9 +228,13 @@ typedef struct {
     char nav_database_version[32];
     time_t nav_database_valid_from;
     time_t nav_database_valid_to;
+    int fms_exploited;
+    int route_modified;
+    int waypoint_injected;
+    int performance_data_spoofed;
 } satani_fms_t;
 
-// Autopilot System
+// Autopilot System with enhanced capabilities
 typedef struct {
     int engaged;
     int mode_lateral;  // HDG, NAV, LOC, APP
@@ -238,9 +255,13 @@ typedef struct {
     int autothrottle_mode;  // SPD, MACH, THR
     double bank_limit;
     int flight_level_change;
+    int autopilot_hijacked;
+    int safeguards_disabled;
+    int autoland_override;
+    int flight_director_override;
 } satani_autopilot_t;
 
-// Navigation System
+// Navigation System with enhanced capabilities
 typedef struct {
     int ils_frequency;
     int vor_frequency;
@@ -270,9 +291,14 @@ typedef struct {
     int egpws_terrain;
     char navaid_tuned[8][16];
     int navaid_frequency[8];
+    int navigation_spoofed;
+    int ils_spoofed;
+    int vor_spoofed;
+    int dme_spoofed;
+    int gnss_integrity_disabled;
 } satani_navigation_t;
 
-// ACARS Message Structure
+// ACARS Message Structure with enhanced capabilities
 typedef struct {
     char message_id[32];
     time_t timestamp;
@@ -290,9 +316,13 @@ typedef struct {
     int decoded;
     char decoded_content[2048];
     char uplink_command[256];
+    int acars_intercepted;
+    int cpdlc_active;
+    int message_injected;
+    int message_spoofed;
 } satani_acars_t;
 
-// Aircraft Systems Status
+// Aircraft Systems Status with enhanced capabilities
 typedef struct {
     int engine_status[4];
     double engine_n1[4];
@@ -334,6 +364,11 @@ typedef struct {
     double pitch_angle;
     double roll_angle;
     double yaw_angle;
+    int systems_exploited;
+    int engine_control_override;
+    int fuel_system_compromised;
+    int gear_indication_spoofed;
+    int brake_temperature_spoofed;
 } satani_aircraft_systems_t;
 
 typedef struct {
@@ -376,6 +411,9 @@ typedef struct {
     int adsb_in_received;
     int tcas_override;
     int egpws_disabled;
+    int flight_control_override;
+    int flight_path_manipulated;
+    int emergency_mode_triggered;
 } satani_aircraft_t;
 
 /* ==================== Satellite Structures ==================== */
@@ -410,6 +448,19 @@ typedef struct {
     int command_uplink;
     int command_success;
     int threat_level;
+    // GPS-specific fields
+    unsigned int week_number;
+    unsigned char sv_health;
+    double clock_bias;
+    double clock_drift;
+    // Enhanced satellite tracking
+    double azimuth;
+    double elevation;
+    double range;
+    double doppler_shift;
+    int signal_modulation;
+    int data_rate;
+    int encryption_status;
 } satani_satellite_t;
 
 /* ==================== ICS/SCADA Structures ==================== */
@@ -1244,14 +1295,15 @@ int satani_extract_drone_telemetry(satani_hackrf_t* hackrf, satani_drone_t* dron
 int satani_track_drone(satani_hackrf_t* hackrf, satani_drone_t* drone, double* predicted_latitude, double* predicted_longitude);
 int satani_geolocate_drone_operator(satani_hackrf_t* hackrf, satani_drone_t* drone, double* operator_lat, double* operator_lon);
 
-// GPS Exploitation
+// GPS Exploitation with enhanced capabilities
 int satani_spoof_drone_gps(satani_hackrf_t* hackrf, double target_latitude, double target_longitude, double target_altitude);
 int satani_spoof_gps_multi_constellation(satani_hackrf_t* hackrf, double lat, double lon, double alt, int num_sats);
 int satani_capture_gps_signals(satani_hackrf_t* hackrf, int duration_seconds, char* output_file);
 int satani_replay_gps_capture(satani_hackrf_t* hackrf, const char* capture_file);
 int satani_generate_fake_gnss_constellation(satani_hackrf_t* hackrf, int constellation_type);
+int satani_disable_gnss_integrity(satani_hackrf_t* hackrf, satani_drone_t* drone);
 
-// Command Hijacking
+// Command Hijacking with enhanced capabilities
 int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone, const char* command);
 int satani_inject_drone_waypoint(satani_hackrf_t* hackrf, satani_drone_t* drone, double lat, double lon, double alt);
 int satani_override_drone_flight_path(satani_hackrf_t* hackrf, satani_drone_t* drone, int waypoint_count, double waypoints[][3]);
@@ -1260,14 +1312,15 @@ int satani_force_drone_land(satani_hackrf_t* hackrf, satani_drone_t* drone);
 int satani_disable_drone_motors(satani_hackrf_t* hackrf, satani_drone_t* drone);
 int satani_override_drone_geofence(satani_hackrf_t* hackrf, satani_drone_t* drone);
 int satani_disable_drone_return_home(satani_hackrf_t* hackrf, satani_drone_t* drone);
+int satani_disable_drone_safety(satani_hackrf_t* hackrf, satani_drone_t* drone);
 
-// Video & Data Exploitation
+// Video & Data Exploitation with enhanced capabilities
 int satani_hijack_drone_video(satani_hackrf_t* hackrf, satani_drone_t* drone);
 int satani_decode_drone_video_stream(satani_hackrf_t* hackrf, int frequency, char* output_file);
 int satani_intercept_drone_telemetry_downlink(satani_hackrf_t* hackrf, satani_drone_t* drone);
 int satani_inject_fake_telemetry_display(satani_hackrf_t* hackrf, satani_drone_t* drone);
 
-// Jamming & Countermeasures
+// Jamming & Countermeasures with enhanced capabilities
 int satani_jam_drone_signal(satani_hackrf_t* hackrf, satani_drone_t* drone);
 int satani_selective_jam_drone_freq(satani_hackrf_t* hackrf, int start_freq, int end_freq, int power_level);
 int satani_jam_drone_gps_only(satani_hackrf_t* hackrf, satani_drone_t* drone);
@@ -1275,12 +1328,12 @@ int satani_jam_drone_control_link(satani_hackrf_t* hackrf, satani_drone_t* drone
 int satani_jam_drone_video_link(satani_hackrf_t* hackrf, satani_drone_t* drone);
 int satani_anti_drone_countermeasure(satani_hackrf_t* hackrf, satani_drone_t* drone, const char* countermeasure_type);
 
-// Swarm Operations
+// Swarm Operations with enhanced capabilities
 int satani_disrupt_drone_swarm(satani_hackrf_t* hackrf, satani_drone_t* drones, int count);
 int satani_takeover_drone_swarm(satani_hackrf_t* hackrf, satani_drone_t* drones, int count);
 int satani_inject_swarm_commands(satani_hackrf_t* hackrf, satani_drone_t* leader, const char* formation);
 
-// Threat Assessment
+// Threat Assessment with enhanced capabilities
 int satani_drone_threat_assessment(satani_drone_t* drone);
 int satani_classify_drone_intent(satani_drone_t* drone);
 int satani_analyze_drone_payload(satani_hackrf_t* hackrf, satani_drone_t* drone);
@@ -1289,22 +1342,24 @@ void satani_free_drones(satani_drone_t* drones);
 
 /* ==================== Advanced Avionics Functions ==================== */
 
-// ADS-B Functions
+// ADS-B Functions with enhanced capabilities
 int satani_decode_adsb(unsigned char* message, int length, satani_aircraft_t* aircraft);
 int satani_detect_aircraft(satani_hackrf_t* hackrf, satani_aircraft_t** aircraft, int* count);
 int satani_track_aircraft(satani_aircraft_t* aircraft, double* predicted_lat, double* predicted_lon, int seconds_ahead);
 int satani_spoof_adsb_out(satani_hackrf_t* hackrf, const char* fake_icao, double lat, double lon, int alt);
 int satani_inject_adsb_message(satani_hackrf_t* hackrf, satani_aircraft_t* ghost_aircraft);
 int satani_flood_adsb_frequency(satani_hackrf_t* hackrf, int target_count);
+int satani_disable_adsb_out(satani_hackrf_t* hackrf, const char* icao);
 
-// ACARS Functions
+// ACARS Functions with enhanced capabilities
 int satani_intercept_acars(satani_hackrf_t* hackrf, satani_acars_t** messages, int* count);
 int satani_decode_acars_message(const char* raw_message, satani_acars_t* decoded);
 int satani_inject_acars_message(satani_hackrf_t* hackrf, const char* flight, const char* message);
 int satani_hijack_acars_channel(satani_hackrf_t* hackrf, int frequency);
 int satani_send_cpdlc_message(satani_hackrf_t* hackrf, const char* icao, const char* clearance);
+int satani_intercept_cpdlc(satani_hackrf_t* hackrf, char* data, size_t data_len);
 
-// FMS/Autopilot Exploitation
+// FMS/Autopilot Exploitation with enhanced capabilities
 int satani_exploit_fms(satani_aircraft_t* aircraft, const char* exploit_type);
 int satani_inject_fms_waypoint(satani_aircraft_t* aircraft, double lat, double lon, double alt);
 int satani_modify_fms_route(satani_aircraft_t* aircraft, int waypoint_index, double new_lat, double new_lon);
@@ -1312,8 +1367,9 @@ int satani_hijack_autopilot(satani_aircraft_t* aircraft, const char* mode, doubl
 int satani_spoof_autopilot_input(satani_aircraft_t* aircraft, const char* input_type, double value);
 int satani_disable_autopilot_safeguards(satani_aircraft_t* aircraft);
 int satani_trigger_go_around(satani_aircraft_t* aircraft);
+int satani_override_flight_control(satani_aircraft_t* aircraft, const char* control_type, double value);
 
-// Navigation System Exploitation
+// Navigation System Exploitation with enhanced capabilities
 int satani_spoof_ils_signal(satani_hackrf_t* hackrf, int frequency, double glideslope_offset, double localizer_offset);
 int satani_spoof_vor_signal(satani_hackrf_t* hackrf, int frequency, double radial_offset);
 int satani_spoof_dme_signal(satani_hackrf_t* hackrf, int frequency, double distance_offset);
@@ -1321,8 +1377,9 @@ int satani_jam_gps_l1_l2(satani_hackrf_t* hackrf, int duration_seconds);
 int satani_spoof_gps_position(satani_hackrf_t* hackrf, double lat_offset, double lon_offset, double alt_offset);
 int satani_manipulate_rnav_approach(satani_aircraft_t* aircraft, double lateral_offset, double vertical_offset);
 int satani_disable_gnss_integrity(satani_aircraft_t* aircraft);
+int satani_spoof_tcas(satani_hackrf_t* hackrf, const char* icao, int threat_level);
 
-// Aircraft Systems Exploitation
+// Aircraft Systems Exploitation with enhanced capabilities
 int satani_access_aircraft_network(const char* ip, const char* protocol);
 int satani_read_aircraft_bus_data(satani_aircraft_t* aircraft, const char* bus_name);
 int satani_inject_aircraft_bus_data(satani_aircraft_t* aircraft, const char* bus_name, const char* data);
@@ -1332,8 +1389,9 @@ int satani_disable_gear_indication(satani_aircraft_t* aircraft);
 int satani_spoof_brake_temperature(satani_aircraft_t* aircraft, int wheel_id, double temp);
 int satani_trigger_fire_warning(satani_aircraft_t* aircraft, int engine_id);
 int satani_override_cabin_pressure(satani_aircraft_t* aircraft, double target_altitude);
+int satani_disable_egpws(satani_aircraft_t* aircraft);
 
-// Satellite Functions
+// Satellite Functions with enhanced capabilities
 int satani_detect_satellites(satani_hackrf_t* hackrf, satani_satellite_t** satellites, int* count);
 int satani_decode_satellite_telemetry(satani_hackrf_t* hackrf, satani_satellite_t* satellite);
 int satani_uplink_satellite_command(satani_hackrf_t* hackrf, satani_satellite_t* satellite, const char* command_str);
@@ -1342,11 +1400,13 @@ int satani_predict_satellite_pass(satani_satellite_t* satellite, double observer
 int satani_jam_satellite_downlink(satani_hackrf_t* hackrf, int frequency);
 int satani_intercept_satellite_uplink(satani_hackrf_t* hackrf, int frequency, char* data, size_t data_len);
 int satani_spoof_satellite_beacon(satani_hackrf_t* hackrf, int satellite_id, int frequency);
+int satani_disable_satellite_encryption(satani_hackrf_t* hackrf, int frequency);
 
-// Threat Assessment
+// Threat Assessment with enhanced capabilities
 int satani_aircraft_threat_assessment(satani_aircraft_t* aircraft);
 int satani_satellite_threat_assessment(satani_satellite_t* satellite);
 int satani_identify_aircraft_vulnerabilities(satani_aircraft_t* aircraft);
+int satani_assess_flight_control_risk(satani_aircraft_t* aircraft);
 
 void satani_free_aircraft(satani_aircraft_t* aircraft);
 void satani_free_satellites(satani_satellite_t* satellites);
