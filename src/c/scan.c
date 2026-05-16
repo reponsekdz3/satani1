@@ -904,7 +904,7 @@ int satani_hackrf_init(satani_hackrf_t* hackrf) {
                         ULONG length = sizeof(conn_info);
                         if (DeviceIoControl(device_handle, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX,
                                             &conn_info, sizeof(conn_info), &conn_info, sizeof(conn_info), &length, NULL)) {
-                            if (conn_info.DeviceDescriptor.idVendor == 0x1D19 && conn_info.DeviceDescriptor.idProduct == 0x0123) {
+                             if (conn_info.DeviceDescriptor.idVendor == 0x1D4D && conn_info.DeviceDescriptor.idProduct == 0xCC10) {
                                 strcpy_s(hackrf->device_path, MAX_PATH, device_detail_data->DevicePath);
                                 hackrf->device_handle = device_handle;
                                 hackrf->frequency_min = 0;

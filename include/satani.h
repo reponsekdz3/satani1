@@ -1149,6 +1149,17 @@ void satani_free_usb_devices(satani_usb_device_t* devices);
 
 /* ==================== HackRF Functions ==================== */
 
+#define GPS_L1_FREQ     1575420000
+#define GPS_L2_FREQ     1227600000
+#define GPS_L5_FREQ     1176450000
+#define GLONASS_L1_FREQ 1602000000
+#define GLONASS_L2_FREQ 1246000000
+#define GALILEO_E1_FREQ 1575420000
+#define BEIDOU_B1_FREQ  1561098000
+#define ADSB_1090_FREQ  1090000000
+#define ADSB_978_FREQ   978000000
+#define ACARS_FREQ      131550000
+
 int satani_hackrf_init(satani_hackrf_t* hackrf);
 int satani_hackrf_scan_frequency(satani_hackrf_t* hackrf, int frequency,
                                 int* signal_strength, char* signal_type);
