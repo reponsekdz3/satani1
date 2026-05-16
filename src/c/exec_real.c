@@ -222,12 +222,59 @@ int satani_hackrf_init(satani_hackrf_t* hackrf) {
         return -1;
     }
     
+    // Try to initialize HackRF via WinUSB
+    // Look for HackRF device by VID/PID (1D19:0123)
+    HDEVINFO device_info_set = SetupDiGetClassDevs(&GUID_DEVINTERFACE_USB_DEVICE,
+                                                   NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+    if (device_info_set != INVALID_HANDLE_VALUE) {
+        SP_DEVICE_INTERFACE_DATA device_interface_data;
+        device_interface_data.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
+        DWORD i = 0;
+        while (SetupDiEnumDeviceInterfaces(device_info_set, NULL, &GUID_DEVINTERFACE_USB_DEVICE, i, &device_interface_data)) {
+            PSP_DEVICE_INTERFACE_DETAIL_DATA device_detail_data = NULL;
+            ULONG required_length = 0;
+            SetupDiGetDeviceInterfaceDetail(device_info_set, &device_interface_data, NULL, 0, &required_length, NULL);
+            device_detail_data = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(required_length);
+            if (device_detail_data) {
+                device_detail_data->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
+                if (SetupDiGetDeviceInterfaceDetail(device_info_set, &device_interface_data,
+                                                   device_detail_data, required_length, &required_length, NULL)) {
+                    // Try to open as HackRF
+                    HANDLE device_handle = CreateFile(device_detail_data->DevicePath,
+                                                      GENERIC_READ | GENERIC_WRITE,
+                                                      FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                                      NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                    if (device_handle != INVALID_HANDLE_VALUE) {
+                        // Check if this is HackRF by trying to read USB descriptor
+                        USB_NODE_CONNECTION_INFORMATION_EX conn_info;
+                        ULONG length = sizeof(conn_info);
+                        if (DeviceIoControl(device_handle, IOCTL_USB_GET_NODE_CONNECTION_INFORMATION_EX,
+                                           &conn_info, sizeof(conn_info), &conn_info, sizeof(conn_info), &length, NULL)) {
+                            if (conn_info.DeviceDescriptor.idVendor == 0x1D19 && conn_info.DeviceDescriptor.idProduct == 0x0123) {
+                                hackrf->device_handle = device_handle;
+                                hackrf->initialized = TRUE;
+                                free(device_detail_data);
+                                SetupDiDestroyDeviceInfoList(device_info_set);
+                                return 0;
+                            }
+                        }
+                        CloseHandle(device_handle);
+                    }
+                }
+                free(device_detail_data);
+            }
+            i++;
+        }
+        SetupDiDestroyDeviceInfoList(device_info_set);
+    }
+    
+    // Initialize in simulation mode if no hardware found
     hackrf->device_handle = NULL;
     hackrf->frequency_min = 0;
-    hackrf->frequency_max = 7250000000; // 7.25 GHz
-    hackrf->sample_rate = 10000000; // 10 MHz
+    hackrf->frequency_max = 7250000000;
+    hackrf->sample_rate = 10000000;
     hackrf->gain = 14;
-    hackrf->bandwidth = 5000000; // 5 MHz
+    hackrf->bandwidth = 5000000;
     hackrf->initialized = TRUE;
     
     return 0;

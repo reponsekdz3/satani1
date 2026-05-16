@@ -286,6 +286,177 @@ unsigned int byte_swap_32(unsigned int val);
 
 int satani_send_wol(const char* mac_address, const char* broadcast_ip);
 
+/* ==================== Agentless Control Functions ==================== */
+
+// Protocol types for agentless control
+typedef enum {
+    AGENTLESS_AUTO = 0,
+    AGENTLESS_WMI = 1,
+    AGENTLESS_WINRM = 2,
+    AGENTLESS_PSEXEC = 3,
+    AGENTLESS_SMB = 4,
+    AGENTLESS_SSH = 5,
+    AGENTLESS_RPC = 6
+} satani_agentless_protocol_t;
+
+// Remote file transfer
+typedef struct {
+    char local_path[MAX_PATH];
+    char remote_path[MAX_PATH];
+    size_t size;
+    int transfer_progress;
+    BOOL complete;
+} satani_file_transfer_t;
+
+// Remote process result
+typedef struct {
+    int process_id;
+    int exit_code;
+    char output[16384];
+    char error[4096];
+    DWORD creation_time;
+    DWORD completion_time;
+} satani_remote_result_t;
+
+// Remote system snapshot
+typedef struct {
+    satani_process_info_t* processes;
+    int process_count;
+    satani_service_info_t* services;
+    int service_count;
+    char network_connections[8192];
+    char open_files[4096];
+    char registry_keys[8192];
+    char environment_vars[4096];
+    char users[2048];
+    char groups[2048];
+    char shares[2048];
+    char scheduled_tasks[4096];
+    char event_log[8192];
+} satani_system_snapshot_t;
+
+// Execute command on remote system without agent
+int satani_agentless_execute(const char* target, const char* command, const char* username,
+                            const char* password, int protocol, char* output, size_t output_size);
+
+// Remote shutdown/restart
+int satani_agentless_shutdown(const char* target, const char* username, const char* password,
+                             int timeout, int force, int reboot);
+
+// Remote service control
+int satani_agentless_service_control(const char* target, const char* service_name,
+                                    const char* action, const char* username, const char* password);
+
+// Remote registry operations
+int satani_agentless_registry_read(const char* target, const char* key_path,
+                                  const char* value_name, char* data, size_t data_size);
+int satani_agentless_registry_write(const char* target, const char* key_path,
+                                   const char* value_name, const char* data, DWORD type);
+int satani_agentless_registry_delete(const char* target, const char* key_path,
+                                    const char* value_name);
+int satani_agentless_registry_create_key(const char* target, const char* key_path);
+
+// Remote file operations
+int satani_agentless_upload_file(const char* target, const char* local_path, const char* remote_path);
+int satani_agentless_download_file(const char* target, const char* remote_path, const char* local_path);
+int satani_agentless_delete_file(const char* target, const char* remote_path);
+int satani_agentless_list_directory(const char* target, const char* remote_dir,
+                                   char* output, size_t output_size);
+
+// Remote process operations
+int satani_agentless_process_list(const char* target, satani_process_info_t** processes, int* count,
+                                 const char* username, const char* password);
+int satani_agentless_process_terminate(const char* target, int pid,
+                                      const char* username, const char* password);
+int satani_agentless_process_start(const char* target, const char* command,
+                                  const char* username, const char* password, int* pid);
+
+// Remote service operations
+int satani_agentless_service_list(const char* target, satani_service_info_t** services, int* count,
+                                 const char* username, const char* password);
+int satani_agentless_service_config(const char* target, const char* service_name,
+                                   DWORD start_type, const char* username, const char* password);
+
+// Remote system information
+int satani_agentless_get_system_info(const char* target, satani_device_t* device,
+                                    const char* username, const char* password);
+int satani_agentless_get_snapshot(const char* target, satani_system_snapshot_t* snapshot,
+                                 const char* username, const char* password);
+
+// Remote network operations
+int satani_agentless_netstat(const char* target, char* output, size_t output_size,
+                            const char* username, const char* password);
+int satani_agentless_route_table(const char* target, char* output, size_t output_size,
+                                const char* username, const char* password);
+int satani_agentless_arp_cache(const char* target, char* output, size_t output_size,
+                              const char* username, const char* password);
+
+// Remote user operations
+int satani_agentless_list_users(const char* target, char* output, size_t output_size,
+                               const char* username, const char* password);
+int satani_agentless_create_user(const char* target, const char* new_user, const char* new_pass,
+                                const char* username, const char* password);
+int satani_agentless_delete_user(const char* target, const char* user_to_delete,
+                                const char* username, const char* password);
+int satani_agentless_add_to_group(const char* target, const char* user, const char* group,
+                                 const char* username, const char* password);
+
+// Remote scheduled task operations
+int satani_agentless_create_task(const char* target, const char* task_name, const char* command,
+                                const char* username, const char* password);
+int satani_agentless_run_task(const char* target, const char* task_name,
+                             const char* username, const char* password);
+int satani_agentless_delete_task(const char* target, const char* task_name,
+                                const char* username, const char* password);
+int satani_agentless_list_tasks(const char* target, char* output, size_t output_size,
+                               const char* username, const char* password);
+
+// Remote PowerShell operations
+int satani_agentless_powershell(const char* target, const char* script,
+                               const char* username, const char* password,
+                               char* output, size_t output_size);
+
+// Remote WMI queries
+int satani_agentless_wmi_query(const char* target, const char* query,
+                              const char* username, const char* password,
+                              char* output, size_t output_size);
+
+// Remote command execution with elevated privileges
+int satani_agentless_execute_elevated(const char* target, const char* command,
+                                     const char* username, const char* password,
+                                     char* output, size_t output_size);
+
+// Batch remote operations
+int satani_agentless_batch_execute(const char* target, const char** commands, int cmd_count,
+                                  const char* username, const char* password,
+                                  satani_remote_result_t* results);
+
+// Remote event log operations
+int satani_agentless_read_event_log(const char* target, const char* log_name,
+                                   int event_count, char* output, size_t output_size,
+                                   const char* username, const char* password);
+int satani_agentless_clear_event_log(const char* target, const char* log_name,
+                                    const char* username, const char* password);
+
+// Remote firewall operations
+int satani_agentless_get_firewall_status(const char* target, char* output, size_t output_size,
+                                        const char* username, const char* password);
+int satani_agentless_add_firewall_rule(const char* target, const char* rule_name,
+                                      const char* direction, int port, const char* action,
+                                      const char* username, const char* password);
+
+// Remote network share operations
+int satani_agentless_create_share(const char* target, const char* share_name,
+                                 const char* path, const char* username, const char* password);
+int satani_agentless_delete_share(const char* target, const char* share_name,
+                                 const char* username, const char* password);
+int satani_agentless_list_shares(const char* target, char* output, size_t output_size,
+                                const char* username, const char* password);
+
+// Cleanup functions
+void satani_free_system_snapshot(satani_system_snapshot_t* snapshot);
+void satani_free_remote_result(satani_remote_result_t* result);
+
 #ifdef __cplusplus
 }
 #endif
