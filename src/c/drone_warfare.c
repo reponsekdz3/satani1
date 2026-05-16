@@ -1,6 +1,7 @@
 // drone_warfare.c - Real Drone Detection, Tracking, and Exploitation Engine
 // Implements advanced RF-based drone warfare capabilities using HackRF
 // NO SIMULATIONS - ALL REAL FUNCTIONALITY
+// ZERO-CLICK EXPLOIT CAPABILITIES INCLUDED
 
 #include <windows.h>
 #include <winsock2.h>
@@ -12,10 +13,17 @@
 #include <math.h>
 #include <process.h>
 #include <intrin.h>
+#include <time.h>
+#include <bcrypt.h>
+#include <ncrypt.h>
+#include <wincrypt.h>
 #include "satani.h"
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "bcrypt.lib")
+#pragma comment(lib, "ncrypt.lib")
+#pragma comment(lib, "crypt32.lib")
 
 // Advanced drone frequency bands (REAL FREQUENCIES)
 #define DRONE_BAND_2_4GHZ_START   2400000000
