@@ -131,6 +131,9 @@ def build_framework(rebuild=False, verbose=False):
             c_dir / 'agentless_control.c',
             c_dir / 'agentless_advanced.c',
             c_dir / 'agentless_linux.c',
+            c_dir / 'drone_warfare.c',
+            c_dir / 'aircraft_satellite.c',
+            c_dir / 'industrial_control.c',
             cpp_dir / 'main.cpp',
             include_dir / 'satani.h'
         ]
@@ -193,9 +196,9 @@ def build_framework(rebuild=False, verbose=False):
         # Compile C++
         print(f"{Colors.BLUE}[+] Compiling C++ code (main.cpp)...{Colors.END}")
         cpp_cmd = ['cl', '-c', f'-Fo{main_obj}', f'-I{include_dir}', str(cpp_dir / 'main.cpp')]
-        run_command(cpp_cmd, verbose=verbose)
+        run_command(c_cmd, verbose=verbose)
         
-# Link
+        # Link
         print(f"{Colors.BLUE}[+] Linking object files...{Colors.END}")
         link_cmd = [
             'link',
@@ -217,7 +220,15 @@ def build_framework(rebuild=False, verbose=False):
             'shell32.lib',
             'setupapi.lib',
             'wlanapi.lib',
-            'winhttp.lib'
+            'winhttp.lib',
+            'bcrypt.lib',
+            'ncrypt.lib',
+            'crypt32.lib',
+            'psapi.lib',
+            'taskschd.lib',
+            'netapi32.lib',
+            'credui.lib',
+            'comctl32.lib'
         ]
         run_command(link_cmd, verbose=verbose)
         

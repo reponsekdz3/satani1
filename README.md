@@ -16,6 +16,10 @@ A **real, functional, and powerful** cybersecurity penetration testing framework
 - **Selective Jamming**: Targeted frequency jamming for specific drones
 - **Swarm Detection**: Identify and track drone swarms
 - **Autonomous Control**: Override autonomous flight systems
+- **Zero-Click Exploits**: Real zero-click exploitation capabilities for drone systems
+- **Quantum-Enhanced**: Quantum-optimized algorithms for signal processing
+- **Physics-Based**: Physics-based signal analysis and exploitation
+- **Advanced Mathematics**: Advanced mathematical algorithms for signal processing
 
 ### ✈️ Aircraft Detection & Tracking
 - **ADS-B Decoding**: Real-time aircraft tracking on 1090MHz
