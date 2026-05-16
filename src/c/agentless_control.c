@@ -1,6 +1,5 @@
 // agentless_control.c - Powerful Agentless Remote Device Control
-// Real functional implementation using multiple protocols
-// No agents required - uses native Windows/Linux remote protocols
+// Implements real remote control using multiple protocols
 
 #include <windows.h>
 #include <winsock2.h>
@@ -26,8 +25,7 @@
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
 
-// ==================== WMI Remote Control ====================
-
+// WMI Connection Structure
 typedef struct {
     IWbemServices* services;
     IWbemLocator* locator;
@@ -35,7 +33,7 @@ typedef struct {
     BOOL connected;
 } wmi_connection_t;
 
-// Initialize COM and connect to WMI namespace
+// WMI Connection
 int wmi_connect(const char* server, const char* username, const char* password, wmi_connection_t* conn) {
     HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);
     if (FAILED(hr) && hr != RPC_E_CHANGED_MODE) return -1;
@@ -47,7 +45,7 @@ int wmi_connect(const char* server, const char* username, const char* password, 
     if (FAILED(hr)) { CoUninitialize(); return -1; }
     
     wchar_t wmi_path[512];
-    swprintf_s(wmi_path, 512, L"\\\\\\\\%S\\root\\cimv2", server);
+    swprintf_s(wmi_path, 512, L"\\\\%S\\root\\cimv2", server);
     
     BSTR path = SysAllocString(wmi_path);
     BSTR user = username ? SysAllocString(_bstr_t(username)) : NULL;
@@ -79,7 +77,7 @@ int wmi_connect(const char* server, const char* username, const char* password, 
     return 0;
 }
 
-// Execute WMI query
+// WMI Query Execution
 int wmi_exec_query(wmi_connection_t* conn, const wchar_t* query, char* output, size_t output_size) {
     if (!conn->connected) return -1;
     
@@ -135,7 +133,7 @@ int wmi_exec_query(wmi_connection_t* conn, const wchar_t* query, char* output, s
     return 0;
 }
 
-// Execute remote process via WMI
+// WMI Process Creation
 int wmi_create_process(wmi_connection_t* conn, const char* command, int* process_id) {
     if (!conn->connected) return -1;
     
@@ -187,9 +185,7 @@ void wmi_disconnect(wmi_connection_t* conn) {
     CoUninitialize();
 }
 
-// ==================== RPC Remote Control ====================
-
-// Initiate remote shutdown via RPC
+// RPC Shutdown
 int rpc_shutdown(const char* target, const char* message, int timeout, int force, int reboot) {
     HANDLE hToken;
     TOKEN_PRIVILEGES tkp;
@@ -216,12 +212,10 @@ int rpc_shutdown(const char* target, const char* message, int timeout, int force
     return 0;
 }
 
-// ==================== SMB Remote Control ====================
-
-// Check admin share access
+// SMB Admin Share Check
 int smb_check_admin_access(const char* target) {
     wchar_t share_path[512];
-    swprintf_s(share_path, 512, L"\\\\\\\\%S\\ADMIN$", target);
+    swprintf_s(share_path, 512, L"\\\\%S\\ADMIN$", target);
     
     NETRESOURCEW nr = {0};
     nr.dwType = RESOURCETYPE_DISK;
@@ -236,7 +230,7 @@ int smb_check_admin_access(const char* target) {
     return -1;
 }
 
-// Execute via SMB service creation
+// SMB Service Execution
 int smb_service_exec(const char* target, const char* service_name, const char* command) {
     SC_HANDLE scm = OpenSCManagerA(target, SERVICES_ACTIVE_DATABASEA, SC_MANAGER_ALL_ACCESS);
     if (!scm) return -1;
@@ -256,10 +250,8 @@ int smb_service_exec(const char* target, const char* service_name, const char* c
     SERVICE_STATUS status;
     StartServiceA(service, 0, NULL);
     
-    // Wait for completion
     Sleep(3000);
     
-    // Cleanup
     ControlService(service, SERVICE_CONTROL_STOP, &status);
     DeleteService(service);
     CloseServiceHandle(service);
@@ -268,7 +260,7 @@ int smb_service_exec(const char* target, const char* service_name, const char* c
     return 0;
 }
 
-// Copy and execute file via SMB
+// SMB Copy and Execute
 int smb_copy_exec(const char* target, const char* local_file, const char* remote_name) {
     char remote_path[512];
     sprintf_s(remote_path, sizeof(remote_path), "\\\\%s\\ADMIN$\\%s", target, remote_name);
@@ -282,8 +274,7 @@ int smb_copy_exec(const char* target, const char* local_file, const char* remote
     return smb_service_exec(target, "SataniExec", exec_cmd);
 }
 
-// ==================== WinRM Remote Control ====================
-
+// WinRM Execute
 int winrm_execute(const char* target, const char* command, const char* username, 
                   const char* password, char* output, size_t output_size) {
     char ps_cmd[2048];
@@ -310,23 +301,18 @@ int winrm_execute(const char* target, const char* command, const char* username,
     return pos > 0 ? 0 : -1;
 }
 
-// ==================== PsExec-style Remote Control ====================
-
+// PsExec-style Execution
 int psexec_style_exec(const char* target, const char* command, const char* username,
                       const char* password, char* output, size_t output_size) {
-    // Create temporary service
     char service_name[64];
     sprintf_s(service_name, sizeof(service_name), "Satani_%d", GetTickCount());
     
-    // Build command with output redirection
     char full_cmd[1024];
     sprintf_s(full_cmd, sizeof(full_cmd), "cmd /c %s > C:\\Windows\\Temp\\satani_out.txt 2>&1", command);
     
-    // Connect to service manager
     SC_HANDLE scm = OpenSCManagerA(target, SERVICES_ACTIVE_DATABASEA, SC_MANAGER_ALL_ACCESS);
     if (!scm) return -1;
     
-    // Create service
     SC_HANDLE service = CreateServiceA(scm, service_name, service_name, SERVICE_ALL_ACCESS,
                                        SERVICE_WIN32_OWN_PROCESS, SERVICE_DEMAND_START,
                                        SERVICE_ERROR_IGNORE, full_cmd, NULL, NULL, NULL, username, password);
@@ -336,10 +322,8 @@ int psexec_style_exec(const char* target, const char* command, const char* usern
         return -1;
     }
     
-    // Start service
     StartServiceA(service, 0, NULL);
     
-    // Wait for completion
     SERVICE_STATUS status;
     for (int i = 0; i < 30; i++) {
         Sleep(1000);
@@ -347,12 +331,10 @@ int psexec_style_exec(const char* target, const char* command, const char* usern
         if (status.dwCurrentState == SERVICE_STOPPED) break;
     }
     
-    // Cleanup service
     DeleteService(service);
     CloseServiceHandle(service);
     CloseServiceHandle(scm);
     
-    // Read output via SMB
     char output_path[512];
     sprintf_s(output_path, sizeof(output_path), "\\\\%s\\ADMIN$\\Temp\\satani_out.txt", target);
     
@@ -368,14 +350,10 @@ int psexec_style_exec(const char* target, const char* command, const char* usern
     return 0;
 }
 
-// ==================== Remote Registry ====================
-
+// Remote Registry Read
 int remote_registry_read(const char* target, HKEY root_key, const char* subkey, 
                          const char* value_name, char* data, size_t data_size) {
     HKEY hKey;
-    char full_path[512];
-    sprintf_s(full_path, sizeof(full_path), "\\\\%s\\%s", target, subkey);
-    
     LONG result = RegConnectRegistryA(target, root_key, &hKey);
     if (result != ERROR_SUCCESS) return -1;
     
@@ -392,6 +370,7 @@ int remote_registry_read(const char* target, HKEY root_key, const char* subkey,
     return result == ERROR_SUCCESS ? 0 : -1;
 }
 
+// Remote Registry Write
 int remote_registry_write(const char* target, HKEY root_key, const char* subkey,
                           const char* value_name, DWORD type, const void* data, size_t data_size) {
     HKEY hKey;
@@ -410,10 +389,8 @@ int remote_registry_write(const char* target, HKEY root_key, const char* subkey,
     return result == ERROR_SUCCESS ? 0 : -1;
 }
 
-// ==================== Remote Process Control ====================
-
+// Remote Process List
 int remote_process_list(const char* target, satani_process_info_t** processes, int* count) {
-    // Use WMI to enumerate remote processes
     wmi_connection_t conn;
     if (wmi_connect(target, NULL, NULL, &conn) != 0) return -1;
     
@@ -424,11 +401,9 @@ int remote_process_list(const char* target, satani_process_info_t** processes, i
         return -1;
     }
     
-    // Parse output and populate process list
     *processes = (satani_process_info_t*)malloc(sizeof(satani_process_info_t) * 500);
     *count = 0;
     
-    // Parse the output string
     char* line = strtok(output, "\n");
     while (line && *count < 500) {
         if (strstr(line, "Name=")) {
@@ -442,6 +417,7 @@ int remote_process_list(const char* target, satani_process_info_t** processes, i
     return 0;
 }
 
+// Remote Process Terminate
 int remote_process_terminate(const char* target, int pid) {
     wmi_connection_t conn;
     if (wmi_connect(target, NULL, NULL, &conn) != 0) return -1;
@@ -464,12 +440,8 @@ int remote_process_terminate(const char* target, int pid) {
     ULONG ret = 0;
     
     if (enumerator->Next(WBEM_INFINITE, 1, &obj, &ret) == S_OK && ret > 0) {
-        obj->Get(L"ProcessId", 0, NULL, NULL, NULL);
-        
-        // Call Terminate method
         IWbemClassObject* results = NULL;
         conn.services->ExecMethod(_bstr_t(L"Win32_Process"), _bstr_t(L"Terminate"), 0, NULL, NULL, &results, NULL);
-        
         if (results) results->Release();
         obj->Release();
     }
@@ -479,8 +451,7 @@ int remote_process_terminate(const char* target, int pid) {
     return 0;
 }
 
-// ==================== Remote Service Control ====================
-
+// Remote Service List
 int remote_service_list(const char* target, satani_service_info_t** services, int* count) {
     SC_HANDLE scm = OpenSCManagerA(target, SERVICES_ACTIVE_DATABASEA, SC_MANAGER_ENUMERATE_SERVICE);
     if (!scm) return -1;
@@ -513,6 +484,7 @@ int remote_service_list(const char* target, satani_service_info_t** services, in
     return 0;
 }
 
+// Remote Service Control
 int remote_service_control(const char* target, const char* service_name, DWORD control_code) {
     SC_HANDLE scm = OpenSCManagerA(target, SERVICES_ACTIVE_DATABASEA, SC_MANAGER_CONNECT);
     if (!scm) return -1;
@@ -544,39 +516,33 @@ int remote_service_control(const char* target, const char* service_name, DWORD c
     return result ? 0 : -1;
 }
 
-// ==================== Remote System Information ====================
-
+// Remote System Information
 int remote_get_system_info(const char* target, satani_device_t* device) {
     wmi_connection_t conn;
     if (wmi_connect(target, NULL, NULL, &conn) != 0) return -1;
     
     char output[4096];
     
-    // Get OS info
     if (wmi_exec_query(&conn, L"SELECT Caption, Version, OSArchitecture FROM Win32_OperatingSystem", 
                        output, sizeof(output)) == 0) {
         strncpy_s(device->os, sizeof(device->os), output, _TRUNCATE);
     }
     
-    // Get computer system info
     if (wmi_exec_query(&conn, L"SELECT Manufacturer, Model, TotalPhysicalMemory FROM Win32_ComputerSystem", 
                        output, sizeof(output)) == 0) {
         strncpy_s(device->motherboard_info, sizeof(device->motherboard_info), output, _TRUNCATE);
     }
     
-    // Get CPU info
     if (wmi_exec_query(&conn, L"SELECT Name, NumberOfCores, MaxClockSpeed FROM Win32_Processor", 
                        output, sizeof(output)) == 0) {
         strncpy_s(device->cpu_info, sizeof(device->cpu_info), output, _TRUNCATE);
     }
     
-    // Get disk info
     if (wmi_exec_query(&conn, L"SELECT DeviceID, Size, FreeSpace FROM Win32_LogicalDisk", 
                        output, sizeof(output)) == 0) {
         strncpy_s(device->disk_info, sizeof(device->disk_info), output, _TRUNCATE);
     }
     
-    // Get network adapters
     if (wmi_exec_query(&conn, L"SELECT Description, IPAddress, MACAddress FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=TRUE", 
                        output, sizeof(output)) == 0) {
         strncpy_s(device->network_adapters, sizeof(device->network_adapters), output, _TRUNCATE);
@@ -586,8 +552,7 @@ int remote_get_system_info(const char* target, satani_device_t* device) {
     return 0;
 }
 
-// ==================== Unified Agentless Control API ====================
-
+// Unified Agentless Control API
 int satani_agentless_execute(const char* target, const char* command, const char* username,
                             const char* password, int protocol, char* output, size_t output_size) {
     switch (protocol) {
@@ -613,7 +578,6 @@ int satani_agentless_execute(const char* target, const char* command, const char
             return smb_service_exec(target, "SataniService", command);
             
         default:
-            // Try all protocols
             if (winrm_execute(target, command, username, password, output, output_size) == 0)
                 return 0;
             if (psexec_style_exec(target, command, username, password, output, output_size) == 0)
@@ -628,11 +592,9 @@ int satani_agentless_execute(const char* target, const char* command, const char
 
 int satani_agentless_shutdown(const char* target, const char* username, const char* password, 
                              int timeout, int force, int reboot) {
-    // Try RPC first
     if (rpc_shutdown(target, "Satani Remote Shutdown", timeout, force, reboot) == 0)
         return 0;
     
-    // Try WMI
     wmi_connection_t conn;
     if (wmi_connect(target, username, password, &conn) == 0) {
         char cmd[128];
@@ -663,7 +625,6 @@ int satani_agentless_service_control(const char* target, const char* service_nam
 
 int satani_agentless_registry_read(const char* target, const char* key_path, 
                                   const char* value_name, char* data, size_t data_size) {
-    // Parse key path
     HKEY root = HKEY_LOCAL_MACHINE;
     if (strncmp(key_path, "HKLM\\", 5) == 0) root = HKEY_LOCAL_MACHINE;
     else if (strncmp(key_path, "HKCU\\", 5) == 0) root = HKEY_CURRENT_USER;

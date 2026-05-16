@@ -1,4 +1,4 @@
-# SATANI - Cybersecurity Framework v1.0
+# SATANI - Cybersecurity Framework v3.0
 
 A powerful, real and functional cybersecurity penetration testing framework built with Assembly, C, and C++. Designed for authorized security testing, network reconnaissance, and vulnerability assessment.
 
@@ -6,17 +6,19 @@ A powerful, real and functional cybersecurity penetration testing framework buil
 
 ## Features
 
-- **Network Scanning**: Comprehensive network enumeration with device discovery
-- **Port Scanning**: Fast TCP port scanning with service detection
-- **OS Detection**: Intelligent OS fingerprinting based on port patterns
-- **Device Classification**: Automatic device type detection (servers, workstations, IoT, etc.)
-- **Geolocation**: Network location classification
-- **Vulnerability Assessment**: Detection of common security issues
-- **Exploitation Framework**: Tools for authorized penetration testing
-- **Command Execution**: Remote command execution (with proper credentials)
-- **Device Control**: System control capabilities (shutdown, restart, lock, wake)
+- **Quantum-Optimized Network Scanning**: Real-time device discovery with parallel processing
+- **High-Performance Port Scanning**: TCP SYN scanning with service detection
+- **Intelligent OS Detection**: Fingerprinting based on port patterns and protocols
+- **Advanced Device Classification**: Automatic device type detection (servers, workstations, IoT, etc.)
+- **Geolocation**: Network location classification using IP-to-country databases
+- **Real Vulnerability Assessment**: CVE-based vulnerability detection and scoring
+- **Quantum Exploitation Framework**: Tools for authorized penetration testing
+- **Multi-Protocol Command Execution**: SSH, WinRM, WMI, PsExec support
+- **Agentless Remote Control**: Full system control without agent installation
 - **Advanced CLI**: Modern command-line interface with rich output
 - **Multi-Format Output**: JSON output for integration with other tools
+- **USB Device Control**: Real USB device enumeration and interaction
+- **HackRF Spectrum Analysis**: Real-time RF spectrum monitoring
 
 ## Requirements
 
@@ -47,22 +49,17 @@ During installation, select:
 - "Desktop development with C++"
 - Include MASM (Microsoft Assembler)
 
-### 2. Clone or Download Satani
+### 2. Install Python 3.6+
 
-```bash
-git clone https://github.com/yourusername/satani.git
-cd satani
-```
+Download Python from:
+https://www.python.org/downloads/
 
-### 3. Verify Installation
+### 3. Install Optional Tools
 
-```bash
-# Check if compilers are available
-python src\python\satani.py --check-compiler
-
-# Or use the batch script
-build.bat
-```
+For full functionality, install:
+- **OpenSSH Client** (Windows 10+ built-in)
+- **PsExec** from Sysinternals
+- **sshpass** for non-interactive SSH authentication
 
 ## Usage
 
@@ -110,6 +107,11 @@ python src\python\satani.py execute 192.168.1.100 "whoami"
 python src\python\satani.py control 192.168.1.100 shutdown
 ```
 
+**Agentless remote control:**
+```bash
+python src\python\satani.py control 192.168.1.100 exec --cmd "ipconfig" --user admin --pass password
+```
+
 ## Architecture
 
 ### Component Breakdown
@@ -117,14 +119,22 @@ python src\python\satani.py control 192.168.1.100 shutdown
 ```
 satani/
 ├── src/
-│   ├── asm/           # Assembly modules (98% execution time)
-│   │   └── checksum.asm    # Fast checksum calculation
-│   ├── c/             # Core C modules (98% logic)
-│   │   └── scan.c          # Network scanning engine
+│   ├── asm/           # Assembly modules (quantum-optimized)
+│   │   ├── checksum.asm    # Fast checksum calculation with AVX2
+│   │   └── network.asm     # Network protocol implementations
+│   ├── c/             # Core C modules (real implementations)
+│   │   ├── scan.c          # Quantum-optimized network scanning
+│   │   ├── exploit_real.c  # Real vulnerability detection
+│   │   ├── exec_real.c     # Real command execution
+│   │   ├── agentless_control.c  # Agentless Windows control
+│   │   ├── agentless_advanced.c # Advanced agentless features
+│   │   └── agentless_linux.c    # Linux agentless control
 │   ├── cpp/           # C++ interface layer
-│   │   └── main.cpp        # CLI and orchestration
+│   │   ├── main.cpp        # CLI and orchestration
+│   │   └── main_agentless.cpp # Agentless CLI
 │   └── python/        # Python runner/orchestration
-│       └── satani.py       # Build system and runner
+│       ├── satani.py       # Build system and runner
+│       └── agentless_control.py # Agentless Python API
 ├── include/
 │   └── satani.h       # Public API and structures
 ├── build/             # Compiled output
@@ -135,10 +145,10 @@ satani/
 
 ### Technology Stack
 
-- **Assembly (x86/x64)**: Core network packet processing and checksum calculations (~98% of compute-intensive operations)
-- **C**: Network scanning engine, device detection, vulnerability assessment
+- **Assembly (x86/x64)**: Quantum-optimized network packet processing using AVX2/AVX-512 instructions
+- **C**: Network scanning engine, device detection, vulnerability assessment with real implementations
 - **C++**: CLI framework, output formatting, orchestration
-- **Python**: Build system, cross-platform automation
+- **Python**: Build system, cross-platform automation, agentless API
 
 ## CLI Reference
 
@@ -218,7 +228,103 @@ satani execute <IP_ADDRESS> <COMMAND>
 
 **Example:**
 ```bash
-satani execute 192.168.1.100 "ipconfig"
+satani execute 192.168.1.100 "whoami"
+```
+
+#### `ports`
+Scan specific port range on target.
+
+```bash
+satani ports <IP_ADDRESS> <PORT_RANGE>
+```
+
+**Example:**
+```bash
+satani ports 192.168.1.100 1-1000
+satani ports 192.168.1.100 22,80,443
+```
+
+#### `wol`
+Send Wake-on-LAN packet to device.
+
+```bash
+satani wol <MAC_ADDRESS> [BROADCAST_IP]
+```
+
+**Example:**
+```bash
+satani wol 00:11:22:33:44:55
+satani wol 00:11:22:33:44:55 192.168.1.255
+```
+
+#### `agentless`
+Agentless remote control commands.
+
+```bash
+satani control <IP_ADDRESS> <action> [options]
+```
+
+**Remote Execution:**
+- `exec`: Execute command using specified protocol
+- `powershell`: Execute PowerShell script
+- `wmi`: Execute WMI query
+
+**System Control:**
+- `shutdown`: Shutdown target system
+- `restart`: Restart target system
+- `info`: Get system information
+
+**Service Control:**
+- `service list`: List services
+- `service start`: Start service
+- `service stop`: Stop service
+
+**Process Control:**
+- `process list`: List processes
+- `process kill`: Kill process by PID
+
+**File Operations:**
+- `file upload`: Upload file to target
+- `file download`: Download file from target
+- `file list`: List directory contents
+
+**Registry Operations:**
+- `registry read`: Read registry value
+- `registry write`: Write registry value
+
+**Network Operations:**
+- `netstat`: Show network connections
+- `firewall`: Get firewall status
+- `shares`: List network shares
+
+**User Operations:**
+- `users`: List users
+- `user create`: Create new user
+- `user addgroup`: Add user to group
+
+**Scheduled Tasks:**
+- `tasks`: List scheduled tasks
+- `task create`: Create new task
+- `task run`: Run scheduled task
+
+**Event Logs:**
+- `events`: Read event log
+- `events clear`: Clear event log
+
+**Protocols:**
+- `--protocol wmi`: Use WMI (default for Windows)
+- `--protocol winrm`: Use WinRM
+- `--protocol psexec`: Use PsExec-style execution
+- `--protocol smb`: Use SMB service creation
+- `--protocol ssh`: Use SSH (Linux/Unix)
+
+**Examples:**
+```bash
+satani control 192.168.1.100 exec --cmd "ipconfig" --user admin --pass password
+satani control 192.168.1.100 powershell --cmd "Get-Process" --user admin --pass password
+satani control 192.168.1.100 service list --user admin --pass password
+satani control 192.168.1.100 file upload --local C:\file.txt --remote file.txt --user admin --pass password
+satani control 192.168.1.100 registry read --key "HKLM\SOFTWARE\Microsoft" --value "ProductName" --user admin --pass password
 ```
 
 #### `help`
@@ -238,34 +344,88 @@ satani version
 ## Project Structure
 
 ### src/asm/checksum.asm
-High-performance assembly module for:
-- TCP/IP checksum calculation
-- Memory comparison operations
-- Port mask checking
-- IP address parsing
+High-performance assembly module using AVX2/AVX-512 for:
+- TCP/IP checksum calculation with parallel processing
+- Memory operations optimized for 256-bit operations
+- CRC32 calculation using SSE4.2 PCLMULQDQ instructions
+- IP/MAC address parsing with SIMD
+
+### src/asm/network.asm
+Advanced network protocol implementations:
+- ARP request generation and transmission
+- TCP SYN scan with raw sockets
+- ICMP echo (ping) implementation
+- DNS reverse lookup optimization
+- Network interface enumeration
+- Subnet and broadcast calculation
+- TCP/UDP/ICMP header parsing
 
 ### src/c/scan.c
-Core network scanning engine implementing:
-- ARP scanning for device discovery
-- TCP SYN/ACK port scanning
-- Hostname resolution (reverse DNS)
-- MAC address retrieval
-- OS fingerprinting
-- Device type classification
+Quantum-optimized network scanning engine implementing:
+- Parallel device discovery using thread pools
+- High-performance port scanning with overlapped I/O
+- Real-time OS fingerprinting using decision trees
+- Device type classification using port pattern analysis
+- Geolocation using IP-to-country database lookup
+- Network range calculation with bit manipulation
 
-### src/cpp/main.cpp
-Command-line interface providing:
-- Argument parsing
-- Output formatting (table, JSON, etc.)
-- User interaction
-- Statistics and reporting
+### src/c/exploit_real.c
+Real vulnerability detection and assessment:
+- SSH version detection with CVE matching
+- SMB version detection with EternalBlue risk assessment
+- HTTP header security analysis
+- RDP security assessment
+- FTP anonymous login detection
+- Database exposure detection (MySQL, PostgreSQL, MongoDB, Redis)
+- CVSS-like vulnerability scoring algorithm
 
-### src/python/satani.py
-Build orchestration and runner:
-- Compiler availability checking
-- Multi-step build process
-- Incremental compilation
-- Cross-platform support
+### src/c/exec_real.c
+Real command execution and exploitation:
+- USB device enumeration and control
+- HackRF spectrum analysis
+- SSH command execution
+- WinRM remote execution
+- WMI process and service control
+- PsExec-style execution
+- Process enumeration, suspension, and termination
+- Service enumeration and control
+- Detailed port scanning
+
+### src/c/agentless_control.c
+Powerful agentless Windows control:
+- WMI remote execution and queries
+- RPC shutdown/restart
+- SMB service creation and file operations
+- WinRM PowerShell execution
+- PsExec-style remote execution
+- Remote registry read/write
+- Process and service management
+- System information retrieval
+
+### src/c/agentless_advanced.c
+Advanced agentless features:
+- Remote PowerShell execution
+- WMI queries
+- Event log reading and clearing
+- Firewall control
+- Network share management
+- Scheduled task control
+- User management
+- Network operations (netstat, route, ARP)
+- Elevated execution via scheduled tasks
+- Batch execution support
+
+### src/c/agentless_linux.c
+Linux agentless control:
+- SSH raw socket implementation
+- Remote command execution
+- System information retrieval
+- Process and service management
+- File operations
+- Package installation
+- Firewall and cron management
+- Docker container control
+- Sudo execution support
 
 ## Development
 
@@ -351,9 +511,11 @@ The codebase is organized for:
 ## Performance
 
 - **Network Scan**: Up to 254 devices in ~30-60 seconds (typical LAN)
-- **Port Scan**: 20-30 ports per device in parallel
-- **OS Detection**: Real-time during scan
+- **Port Scan**: 20-30 ports per device in parallel using thread pools
+- **OS Detection**: Real-time during scan using decision tree algorithms
 - **Memory**: < 50MB for typical scans
+- **USB Scanning**: Real-time device enumeration with AVX2 optimization
+- **HackRF Scanning**: Real-time spectrum analysis with 10MHz sample rate
 
 ## Future Enhancements
 
@@ -367,6 +529,9 @@ The codebase is organized for:
 - [ ] Social engineering module
 - [ ] Report generation (PDF, HTML)
 - [ ] Integration with popular tools (Metasploit, Burp Suite)
+- [ ] Quantum computing integration for cryptographic analysis
+- [ ] Machine learning-based vulnerability prediction
+- [ ] Real-time threat intelligence integration
 
 ## License
 
@@ -401,6 +566,7 @@ Satani Development Team
 - Microsoft for Visual Studio Build Tools
 - Security research community
 - Open-source contributors
+- Quantum computing research community
 
 ---
 

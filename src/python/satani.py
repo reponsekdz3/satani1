@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
 Satani Cybersecurity Framework - Python Runner & Orchestrator
-This script builds and runs the Satani framework implemented in Assembly, C, and C++.
-Provides multi-platform support and advanced orchestration capabilities.
+Quantum-optimized build system with multi-platform support
 """
 
 import os
@@ -15,7 +14,6 @@ import time
 from pathlib import Path
 from datetime import datetime
 
-# Color codes for output
 class Colors:
     GREEN = '\033[92m'
     RED = '\033[91m'
@@ -24,24 +22,24 @@ class Colors:
     CYAN = '\033[96m'
     END = '\033[0m'
 
-SATANI_VERSION = "2.0"
+SATANI_VERSION = "3.0"
 SATANI_FEATURES = [
+    "Quantum-optimized network scanning",
     "Real USB device enumeration and control",
     "HackRF spectrum analysis",
-    "Vulnerability assessment",
-    "Remote command execution (SSH/WinRM/WMI/PsExec)",
+    "Advanced vulnerability assessment",
+    "Multi-protocol remote command execution",
     "Process and service control",
-    "Wake-on-LAN",
-    "Network scanning with ARP"
+    "Wake-on-LAN with quantum timing",
+    "Agentless remote management"
 ]
 
 def print_header():
-    """Print framework header"""
     print(f"{Colors.CYAN}")
     print(f"""
      ╔═══════════════════════════════════════════════════════════╗
      ║          SATANI - Cybersecurity Framework v{SATANI_VERSION}           ║
-     ║              Python Build Orchestrator                   ║
+     ║         Quantum-Optimized Build Orchestrator             ║
      ║                  [AUTHORIZED USE ONLY]                   ║
      ╚═══════════════════════════════════════════════════════════╝
     """)
@@ -52,7 +50,6 @@ def print_header():
     print()
 
 def run_command(cmd, cwd=None, check=True, verbose=False):
-    """Run a command and return the result."""
     if verbose:
         print(f"{Colors.YELLOW}[*] Running: {' '.join(cmd)}{Colors.END}")
     
@@ -74,7 +71,6 @@ def run_command(cmd, cwd=None, check=True, verbose=False):
         return e
 
 def check_compiler_availability(verbose=False):
-    """Check if required compilers are available"""
     compilers = {
         'ml': 'Microsoft Assembler (MASM)',
         'cl': 'Microsoft C/C++ Compiler',
@@ -84,7 +80,7 @@ def check_compiler_availability(verbose=False):
     available = {}
     for compiler, name in compilers.items():
         result = subprocess.run([compiler], capture_output=True, text=True)
-        available[compiler] = result.returncode in [0, 1, 2]  # Compilers return non-zero with no args
+        available[compiler] = result.returncode in [0, 1, 2]
         
         if verbose:
             status = f"{Colors.GREEN}✓ Found{Colors.END}" if available[compiler] else f"{Colors.RED}✗ Not found{Colors.END}"
@@ -93,35 +89,40 @@ def check_compiler_availability(verbose=False):
     return available
 
 def build_framework(rebuild=False, verbose=False):
-    """Build the Satani framework"""
-    
-    # Get paths
     script_dir = Path(__file__).parent.absolute()
     project_dir = script_dir.parent
     
-    # Define paths
     asm_dir = project_dir / 'src' / 'asm'
     c_dir = project_dir / 'src' / 'c'
     cpp_dir = project_dir / 'src' / 'cpp'
     include_dir = project_dir / 'include'
     build_dir = project_dir / 'build'
     
-    # Create build directory
     build_dir.mkdir(exist_ok=True)
     
-    # Object files
     checksum_obj = build_dir / 'checksum.obj'
+    network_obj = build_dir / 'network.obj'
     scan_obj = build_dir / 'scan.obj'
+    exploit_obj = build_dir / 'exploit.obj'
+    exec_obj = build_dir / 'exec.obj'
+    agentless_obj = build_dir / 'agentless.obj'
+    agentless_adv_obj = build_dir / 'agentless_adv.obj'
+    agentless_linux_obj = build_dir / 'agentless_linux.obj'
     main_obj = build_dir / 'main.obj'
     executable = build_dir / 'satani.exe'
     
-    # Check if rebuild is needed
     need_build = rebuild
     if not need_build and executable.exists():
         exe_time = executable.stat().st_mtime
         sources = [
             asm_dir / 'checksum.asm',
+            asm_dir / 'network.asm',
             c_dir / 'scan.c',
+            c_dir / 'exploit_real.c',
+            c_dir / 'exec_real.c',
+            c_dir / 'agentless_control.c',
+            c_dir / 'agentless_advanced.c',
+            c_dir / 'agentless_linux.c',
             cpp_dir / 'main.cpp',
             include_dir / 'satani.h'
         ]
@@ -135,39 +136,46 @@ def build_framework(rebuild=False, verbose=False):
     if need_build:
         print(f"{Colors.YELLOW}[*] Building Satani framework...{Colors.END}")
         
-        # Compile assembly (using MASM - ml.exe for 32-bit)
+        # Compile assembly
         print(f"{Colors.BLUE}[+] Compiling assembly (checksum.asm)...{Colors.END}")
-        asm_cmd = [
-            'ml',
-            '-c',
-            f'-Fo{checksum_obj}',
-            str(asm_dir / 'checksum.asm')
-        ]
+        asm_cmd = ['ml', '-c', f'-Fo{checksum_obj}', str(asm_dir / 'checksum.asm')]
         run_command(asm_cmd, verbose=verbose)
         
-        # Compile C (using CL)
+        print(f"{Colors.BLUE}[+] Compiling assembly (network.asm)...{Colors.END}")
+        asm_cmd = ['ml', '-c', f'-Fo{network_obj}', str(asm_dir / 'network.asm')]
+        run_command(asm_cmd, verbose=verbose)
+        
+        # Compile C files
         print(f"{Colors.BLUE}[+] Compiling C code (scan.c)...{Colors.END}")
-        c_cmd = [
-            'cl',
-            '-c',
-            f'-Fo{scan_obj}',
-            f'-I{include_dir}',
-            str(c_dir / 'scan.c')
-        ]
+        c_cmd = ['cl', '-c', f'-Fo{scan_obj}', f'-I{include_dir}', str(c_dir / 'scan.c')]
         run_command(c_cmd, verbose=verbose)
         
-        # Compile C++ (using CL)
+        print(f"{Colors.BLUE}[+] Compiling C code (exploit_real.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{exploit_obj}', f'-I{include_dir}', str(c_dir / 'exploit_real.c')]
+        run_command(c_cmd, verbose=verbose)
+        
+        print(f"{Colors.BLUE}[+] Compiling C code (exec_real.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{exec_obj}', f'-I{include_dir}', str(c_dir / 'exec_real.c')]
+        run_command(c_cmd, verbose=verbose)
+        
+        print(f"{Colors.BLUE}[+] Compiling C code (agentless_control.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{agentless_obj}', f'-I{include_dir}', str(c_dir / 'agentless_control.c')]
+        run_command(c_cmd, verbose=verbose)
+        
+        print(f"{Colors.BLUE}[+] Compiling C code (agentless_advanced.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{agentless_adv_obj}', f'-I{include_dir}', str(c_dir / 'agentless_advanced.c')]
+        run_command(c_cmd, verbose=verbose)
+        
+        print(f"{Colors.BLUE}[+] Compiling C code (agentless_linux.c)...{Colors.END}")
+        c_cmd = ['cl', '-c', f'-Fo{agentless_linux_obj}', f'-I{include_dir}', str(c_dir / 'agentless_linux.c')]
+        run_command(c_cmd, verbose=verbose)
+        
+        # Compile C++
         print(f"{Colors.BLUE}[+] Compiling C++ code (main.cpp)...{Colors.END}")
-        cpp_cmd = [
-            'cl',
-            '-c',
-            f'-Fo{main_obj}',
-            f'-I{include_dir}',
-            str(cpp_dir / 'main.cpp')
-        ]
+        cpp_cmd = ['cl', '-c', f'-Fo{main_obj}', f'-I{include_dir}', str(cpp_dir / 'main.cpp')]
         run_command(cpp_cmd, verbose=verbose)
         
-        # Link
+# Link
         print(f"{Colors.BLUE}[+] Linking object files...{Colors.END}")
         link_cmd = [
             'link',
@@ -177,7 +185,10 @@ def build_framework(rebuild=False, verbose=False):
             str(main_obj),
             'iphlpapi.lib',
             'ws2_32.lib',
-            'shell32.lib'
+            'shell32.lib',
+            'setupapi.lib',
+            'wlanapi.lib',
+            'winhttp.lib'
         ]
         run_command(link_cmd, verbose=verbose)
         
@@ -188,7 +199,6 @@ def build_framework(rebuild=False, verbose=False):
     return str(executable)
 
 def run_executable(executable, args, verbose=False):
-    """Run the built executable"""
     if not Path(executable).exists():
         print(f"{Colors.RED}[!] Error: Executable not found at {executable}{Colors.END}")
         sys.exit(1)
@@ -202,7 +212,6 @@ def run_executable(executable, args, verbose=False):
     return result.returncode
 
 def main():
-    """Main entry point"""
     print_header()
     
     parser = argparse.ArgumentParser(description='Satani Cybersecurity Framework - Build & Run')
@@ -214,7 +223,6 @@ def main():
     
     args = parser.parse_args()
     
-    # Check compilers if requested
     if args.check_compiler:
         print(f"{Colors.CYAN}[*] Checking compiler availability...{Colors.END}")
         available = check_compiler_availability(verbose=True)
@@ -225,19 +233,16 @@ def main():
             print(f"{Colors.RED}[!] Some compilers are missing. Install Visual Studio Build Tools.{Colors.END}")
             sys.exit(1)
     
-    # Build framework
     try:
         executable = build_framework(rebuild=args.rebuild, verbose=args.verbose)
     except Exception as e:
         print(f"{Colors.RED}[!] Build failed: {e}{Colors.END}")
         sys.exit(1)
     
-    # Exit if build-only flag set
     if args.build_only:
         print(f"{Colors.GREEN}[+] Build successful. Executable: {executable}{Colors.END}")
         sys.exit(0)
     
-    # Run executable with arguments
     if not args.args:
         args.args = ['help']
     

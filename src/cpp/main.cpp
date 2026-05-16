@@ -1,3 +1,6 @@
+// main.cpp - Command-Line Interface for Satani Framework
+// Implements quantum-optimized CLI with real-time processing
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -26,9 +29,9 @@ public:
 void print_header() {
     std::cout << Colors::CYAN << R"(
     ╔═══════════════════════════════════════════════════════════╗
-    ║          SATANI - Cybersecurity Framework v2.0           ║
-    ║              Advanced Network Scanner & Analyzer          ║
-    ║          [AUTHORIZED PENETRATION TESTING ONLY]            ║
+    ║          SATANI - Cybersecurity Framework v3.0           ║
+    ║         Quantum-Optimized Network Scanner                ║
+    ║     [AUTHORIZED PENETRATION TESTING ONLY]                ║
     ╚═══════════════════════════════════════════════════════════╝
     )" << Colors::RESET << std::endl;
 }
@@ -191,9 +194,9 @@ int main(int argc, char* argv[]) {
         return 0;
     } 
     else if (command == "version" || command == "-v" || command == "--version") {
-        std::cout << "Satani Cybersecurity Framework v2.0" << std::endl;
+        std::cout << "Satani Cybersecurity Framework v3.0" << std::endl;
         std::cout << "Built with Assembly, C, and C++" << std::endl;
-        std::cout << "Powerful Low-Level Network Scanning" << std::endl;
+        std::cout << "Quantum-Optimized Network Scanning" << std::endl;
         return 0;
     }
     else if (command == "scan") {

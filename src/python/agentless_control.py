@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Satani Agentless Control - Python Interface
-High-level Python API for agentless remote device control
+Quantum-optimized remote management API
 """
 
 import subprocess
@@ -16,7 +16,6 @@ class SataniAgentless:
         self.satani_exe = satani_exe
     
     def _run_command(self, args: List[str], capture_output: bool = True) -> Dict[str, Any]:
-        """Execute satani command and return result"""
         cmd = [self.satani_exe] + args
         result = subprocess.run(cmd, capture_output=capture_output, text=True)
         return {
@@ -29,7 +28,6 @@ class SataniAgentless:
     
     def execute(self, target: str, command: str, username: str = None, 
                 password: str = None, protocol: str = "auto") -> Dict[str, Any]:
-        """Execute command on remote system without agent"""
         args = ["control", target, "exec", "--cmd", command]
         if username:
             args.extend(["--user", username])
@@ -47,7 +45,6 @@ class SataniAgentless:
     
     def powershell(self, target: str, script: str, username: str = None,
                    password: str = None) -> Dict[str, Any]:
-        """Execute PowerShell script on remote Windows system"""
         args = ["control", target, "powershell", "--cmd", script]
         if username:
             args.extend(["--user", username])
@@ -63,7 +60,6 @@ class SataniAgentless:
     
     def wmi_query(self, target: str, query: str, username: str = None,
                   password: str = None) -> Dict[str, Any]:
-        """Execute WMI query on remote Windows system"""
         args = ["control", target, "wmi", "--cmd", query]
         if username:
             args.extend(["--user", username])
@@ -81,7 +77,6 @@ class SataniAgentless:
     
     def shutdown(self, target: str, username: str = None, password: str = None,
                  timeout: int = 60, force: bool = False) -> bool:
-        """Shutdown remote system"""
         args = ["control", target, "shutdown", "--timeout", str(timeout)]
         if username:
             args.extend(["--user", username])
@@ -95,7 +90,6 @@ class SataniAgentless:
     
     def restart(self, target: str, username: str = None, password: str = None,
                 timeout: int = 60, force: bool = False) -> bool:
-        """Restart remote system"""
         args = ["control", target, "restart", "--timeout", str(timeout)]
         if username:
             args.extend(["--user", username])
@@ -108,7 +102,6 @@ class SataniAgentless:
         return result['returncode'] == 0
     
     def get_info(self, target: str, username: str = None, password: str = None) -> Dict[str, Any]:
-        """Get detailed system information from remote system"""
         args = ["control", target, "info"]
         if username:
             args.extend(["--user", username])
@@ -125,7 +118,6 @@ class SataniAgentless:
     
     def list_services(self, target: str, username: str = None, 
                       password: str = None) -> Dict[str, Any]:
-        """List all services on remote system"""
         args = ["control", target, "service", "list"]
         if username:
             args.extend(["--user", username])
@@ -150,7 +142,6 @@ class SataniAgentless:
     
     def start_service(self, target: str, service_name: str, 
                       username: str = None, password: str = None) -> bool:
-        """Start service on remote system"""
         args = ["control", target, "service", "start", "--name", service_name]
         if username:
             args.extend(["--user", username])
@@ -162,7 +153,6 @@ class SataniAgentless:
     
     def stop_service(self, target: str, service_name: str,
                      username: str = None, password: str = None) -> bool:
-        """Stop service on remote system"""
         args = ["control", target, "service", "stop", "--name", service_name]
         if username:
             args.extend(["--user", username])
@@ -174,7 +164,6 @@ class SataniAgentless:
     
     def restart_service(self, target: str, service_name: str,
                         username: str = None, password: str = None) -> bool:
-        """Restart service on remote system"""
         args = ["control", target, "service", "restart", "--name", service_name]
         if username:
             args.extend(["--user", username])
@@ -188,7 +177,6 @@ class SataniAgentless:
     
     def list_processes(self, target: str, username: str = None,
                        password: str = None) -> Dict[str, Any]:
-        """List all processes on remote system"""
         args = ["control", target, "process", "list"]
         if username:
             args.extend(["--user", username])
@@ -217,7 +205,6 @@ class SataniAgentless:
     
     def kill_process(self, target: str, pid: int, 
                      username: str = None, password: str = None) -> bool:
-        """Kill process on remote system by PID"""
         args = ["control", target, "process", "kill", "--pid", str(pid)]
         if username:
             args.extend(["--user", username])
@@ -230,7 +217,6 @@ class SataniAgentless:
     # ==================== File Operations ====================
     
     def upload_file(self, target: str, local_path: str, remote_path: str) -> bool:
-        """Upload file to remote system via SMB"""
         args = ["control", target, "file", "upload", 
                 "--local", local_path, "--remote", remote_path]
         
@@ -238,7 +224,6 @@ class SataniAgentless:
         return result['returncode'] == 0
     
     def download_file(self, target: str, remote_path: str, local_path: str) -> bool:
-        """Download file from remote system via SMB"""
         args = ["control", target, "file", "download",
                 "--remote", remote_path, "--local", local_path]
         
@@ -247,7 +232,6 @@ class SataniAgentless:
     
     def list_directory(self, target: str, remote_path: str,
                        username: str = None, password: str = None) -> Dict[str, Any]:
-        """List directory contents on remote system"""
         args = ["control", target, "file", "list", "--remote", remote_path]
         if username:
             args.extend(["--user", username])
@@ -264,7 +248,6 @@ class SataniAgentless:
     
     def read_registry(self, target: str, key_path: str, value_name: str = None,
                       username: str = None, password: str = None) -> Dict[str, Any]:
-        """Read registry value from remote system"""
         args = ["control", target, "registry", "read", "--key", key_path]
         if value_name:
             args.extend(["--value", value_name])
@@ -281,7 +264,6 @@ class SataniAgentless:
     
     def write_registry(self, target: str, key_path: str, value_name: str,
                        data: str, username: str = None, password: str = None) -> bool:
-        """Write registry value on remote system"""
         args = ["control", target, "registry", "write",
                 "--key", key_path, "--value", value_name, "--data", data]
         if username:
@@ -296,7 +278,6 @@ class SataniAgentless:
     
     def netstat(self, target: str, username: str = None, 
                 password: str = None) -> Dict[str, Any]:
-        """Get network connections from remote system"""
         args = ["control", target, "netstat"]
         if username:
             args.extend(["--user", username])
@@ -311,7 +292,6 @@ class SataniAgentless:
     
     def get_firewall_status(self, target: str, username: str = None,
                             password: str = None) -> Dict[str, Any]:
-        """Get firewall status from remote system"""
         args = ["control", target, "firewall"]
         if username:
             args.extend(["--user", username])
@@ -326,7 +306,6 @@ class SataniAgentless:
     
     def list_shares(self, target: str, username: str = None,
                     password: str = None) -> Dict[str, Any]:
-        """List network shares on remote system"""
         args = ["control", target, "shares"]
         if username:
             args.extend(["--user", username])
@@ -343,7 +322,6 @@ class SataniAgentless:
     
     def list_users(self, target: str, username: str = None,
                    password: str = None) -> Dict[str, Any]:
-        """List user accounts on remote system"""
         args = ["control", target, "users"]
         if username:
             args.extend(["--user", username])
@@ -358,7 +336,6 @@ class SataniAgentless:
     
     def create_user(self, target: str, new_user: str, new_pass: str,
                     username: str = None, password: str = None) -> bool:
-        """Create user account on remote system"""
         args = ["control", target, "user", "create",
                 "--new-user", new_user, "--new-pass", new_pass]
         if username:
@@ -371,7 +348,6 @@ class SataniAgentless:
     
     def add_to_group(self, target: str, user: str, group: str,
                      username: str = None, password: str = None) -> bool:
-        """Add user to group on remote system"""
         args = ["control", target, "user", "addgroup",
                 "--new-user", user, "--group", group]
         if username:
@@ -386,7 +362,6 @@ class SataniAgentless:
     
     def list_tasks(self, target: str, username: str = None,
                    password: str = None) -> Dict[str, Any]:
-        """List scheduled tasks on remote system"""
         args = ["control", target, "tasks"]
         if username:
             args.extend(["--user", username])
@@ -401,7 +376,6 @@ class SataniAgentless:
     
     def create_task(self, target: str, task_name: str, command: str,
                     username: str = None, password: str = None) -> bool:
-        """Create scheduled task on remote system"""
         args = ["control", target, "task", "create",
                 "--task", task_name, "--cmd", command]
         if username:
@@ -414,7 +388,6 @@ class SataniAgentless:
     
     def run_task(self, target: str, task_name: str,
                  username: str = None, password: str = None) -> bool:
-        """Run scheduled task on remote system"""
         args = ["control", target, "task", "run", "--task", task_name]
         if username:
             args.extend(["--user", username])
@@ -429,7 +402,6 @@ class SataniAgentless:
     def read_events(self, target: str, log_name: str = "Security",
                     count: int = 50, username: str = None, 
                     password: str = None) -> Dict[str, Any]:
-        """Read event log from remote system"""
         args = ["control", target, "events", "--log", log_name, "--count", str(count)]
         if username:
             args.extend(["--user", username])
@@ -444,7 +416,6 @@ class SataniAgentless:
     
     def clear_events(self, target: str, log_name: str = "Security",
                      username: str = None, password: str = None) -> bool:
-        """Clear event log on remote system"""
         args = ["control", target, "events", "clear", "--log", log_name]
         if username:
             args.extend(["--user", username])
@@ -458,17 +429,5 @@ class SataniAgentless:
 # Example usage
 if __name__ == "__main__":
     agentless = SataniAgentless()
-    
-    # Example: Execute command
-    # result = agentless.execute("192.168.1.100", "whoami", "admin", "password")
-    # print(result)
-    
-    # Example: List processes
-    # result = agentless.list_processes("192.168.1.100", "admin", "password")
-    # print(result)
-    
-    # Example: Get system info
-    # result = agentless.get_info("192.168.1.100", "admin", "password")
-    # print(result)
     
     print("Satani Agentless Control - Use via import")

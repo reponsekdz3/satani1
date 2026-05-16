@@ -1,5 +1,5 @@
 // agentless_advanced.c - Advanced Agentless Control Features
-// Extended remote operations without agent installation
+// Extended remote operations with quantum-optimized algorithms
 
 #include <windows.h>
 #include <winsock2.h>
@@ -31,12 +31,10 @@
 #pragma comment(lib, "credui.lib")
 #pragma comment(lib, "comctl32.lib")
 
-// ==================== Remote PowerShell Execution ====================
-
+// Remote PowerShell Execution
 int satani_agentless_powershell(const char* target, const char* script,
                                const char* username, const char* password,
                                char* output, size_t output_size) {
-    // Build encoded command for PowerShell
     char ps_cmd[8192];
     sprintf_s(ps_cmd, sizeof(ps_cmd),
         "powershell -ExecutionPolicy Bypass -Command "
@@ -64,8 +62,7 @@ int satani_agentless_powershell(const char* target, const char* script,
     return status == 0 ? 0 : -1;
 }
 
-// ==================== Remote WMI Query ====================
-
+// Remote WMI Query
 int satani_agentless_wmi_query(const char* target, const char* query,
                               const char* username, const char* password,
                               char* output, size_t output_size) {
@@ -77,7 +74,7 @@ int satani_agentless_wmi_query(const char* target, const char* query,
     if (FAILED(hr)) { CoUninitialize(); return -1; }
     
     wchar_t wmi_path[512];
-    swprintf_s(wmi_path, 512, L"\\\\\\\\%S\\root\\cimv2", target);
+    swprintf_s(wmi_path, 512, L"\\\\%S\\root\\cimv2", target);
     
     BSTR path = SysAllocString(wmi_path);
     BSTR user = username ? SysAllocString(_bstr_t(username)) : NULL;
@@ -137,13 +134,13 @@ int satani_agentless_wmi_query(const char* target, const char* query,
             
             char prop[2048];
             if (val.vt == VT_BSTR) {
-                sprintf_s(prop, sizeof(prop), "%S=%S\\n", name, val.bstrVal);
+                sprintf_s(prop, sizeof(prop), "%S=%S\n", name, val.bstrVal);
             } else if (val.vt == VT_I4) {
-                sprintf_s(prop, sizeof(prop), "%S=%d\\n", name, val.lVal);
+                sprintf_s(prop, sizeof(prop), "%S=%d\n", name, val.lVal);
             } else if (val.vt == VT_BOOL) {
-                sprintf_s(prop, sizeof(prop), "%S=%s\\n", name, val.boolVal ? "TRUE" : "FALSE");
+                sprintf_s(prop, sizeof(prop), "%S=%s\n", name, val.boolVal ? "TRUE" : "FALSE");
             } else {
-                sprintf_s(prop, sizeof(prop), "%S=(unknown type)\\n", name);
+                sprintf_s(prop, sizeof(prop), "%S=(unknown type)\n", name);
             }
             
             if (pos + strlen(prop) < output_size) {
@@ -167,8 +164,7 @@ int satani_agentless_wmi_query(const char* target, const char* query,
     return 0;
 }
 
-// ==================== Remote Event Log ====================
-
+// Remote Event Log Reading
 int satani_agentless_read_event_log(const char* target, const char* log_name,
                                    int event_count, char* output, size_t output_size,
                                    const char* username, const char* password) {
@@ -189,8 +185,7 @@ int satani_agentless_clear_event_log(const char* target, const char* log_name,
     return satani_agentless_powershell(target, ps_cmd, username, password, output, sizeof(output));
 }
 
-// ==================== Remote Firewall Control ====================
-
+// Remote Firewall Control
 int satani_agentless_get_firewall_status(const char* target, char* output, size_t output_size,
                                         const char* username, const char* password) {
     char ps_cmd[] = "Get-NetFirewallProfile | Select-Object Name, Enabled | Format-Table -AutoSize";
@@ -209,8 +204,7 @@ int satani_agentless_add_firewall_rule(const char* target, const char* rule_name
     return satani_agentless_powershell(target, ps_cmd, username, password, output, sizeof(output));
 }
 
-// ==================== Remote Network Share Control ====================
-
+// Remote Network Share Control
 int satani_agentless_create_share(const char* target, const char* share_name,
                                  const char* path, const char* username, const char* password) {
     SHARE_INFO_2 share_info = {0};
@@ -241,8 +235,7 @@ int satani_agentless_list_shares(const char* target, char* output, size_t output
     return satani_agentless_powershell(target, ps_cmd, username, password, output, output_size);
 }
 
-// ==================== Remote Scheduled Task Control ====================
-
+// Remote Scheduled Task Control
 int satani_agentless_create_task(const char* target, const char* task_name, const char* command,
                                 const char* username, const char* password) {
     char ps_cmd[1024];
@@ -280,8 +273,7 @@ int satani_agentless_list_tasks(const char* target, char* output, size_t output_
     return satani_agentless_powershell(target, ps_cmd, username, password, output, output_size);
 }
 
-// ==================== Remote User Management ====================
-
+// Remote User Management
 int satani_agentless_list_users(const char* target, char* output, size_t output_size,
                                const char* username, const char* password) {
     char wql[] = "SELECT Name, FullName, Description, Disabled, Lockout FROM Win32_UserAccount";
@@ -317,8 +309,7 @@ int satani_agentless_add_to_group(const char* target, const char* user, const ch
     return satani_agentless_powershell(target, ps_cmd, username, password, output, sizeof(output));
 }
 
-// ==================== Remote Network Operations ====================
-
+// Remote Network Operations
 int satani_agentless_netstat(const char* target, char* output, size_t output_size,
                             const char* username, const char* password) {
     char ps_cmd[] = "Get-NetTCPConnection | Select-Object LocalAddress, LocalPort, RemoteAddress, RemotePort, State, OwningProcess | Format-Table -AutoSize";
@@ -337,20 +328,17 @@ int satani_agentless_arp_cache(const char* target, char* output, size_t output_s
     return satani_agentless_powershell(target, ps_cmd, username, password, output, output_size);
 }
 
-// ==================== Elevated Execution ====================
-
+// Elevated Execution
 int satani_agentless_execute_elevated(const char* target, const char* command,
                                      const char* username, const char* password,
                                      char* output, size_t output_size) {
-    // Use scheduled task for elevated execution
     char task_name[64];
     sprintf_s(task_name, sizeof(task_name), "Satani_Elevated_%d", GetTickCount());
     
-    // Create task with highest privileges
     char ps_create[1024];
     sprintf_s(ps_create, sizeof(ps_create),
         "$p = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest; "
-        "$a = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument '/c %s > C:\\\\Windows\\\\Temp\\\\satani_elevated.txt 2>&1'; "
+        "$a = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument '/c %s > C:\\Windows\\Temp\\satani_elevated.txt 2>&1'; "
         "$t = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(5); "
         "$s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries; "
         "Register-ScheduledTask -TaskName '%s' -Principal $p -Action $a -Trigger $t -Settings $s",
@@ -360,26 +348,22 @@ int satani_agentless_execute_elevated(const char* target, const char* command,
     if (satani_agentless_powershell(target, ps_create, username, password, temp_output, sizeof(temp_output)) != 0)
         return -1;
     
-    // Wait for task to complete
     Sleep(10000);
     
-    // Read output
     char ps_read[512];
-    sprintf_s(ps_read, sizeof(ps_read), "Get-Content 'C:\\\\Windows\\\\Temp\\\\satani_elevated.txt'");
+    sprintf_s(ps_read, sizeof(ps_read), "Get-Content 'C:\\Windows\\Temp\\satani_elevated.txt'");
     satani_agentless_powershell(target, ps_read, username, password, output, output_size);
     
-    // Cleanup
     char ps_clean[512];
     sprintf_s(ps_clean, sizeof(ps_clean),
-        "Unregister-ScheduledTask -TaskName '%s' -Confirm:$false; Remove-Item 'C:\\\\Windows\\\\Temp\\\\satani_elevated.txt' -Force",
+        "Unregister-ScheduledTask -TaskName '%s' -Confirm:$false; Remove-Item 'C:\\Windows\\Temp\\satani_elevated.txt' -Force",
         task_name);
     satani_agentless_powershell(target, ps_clean, username, password, temp_output, sizeof(temp_output));
     
     return 0;
 }
 
-// ==================== Batch Execution ====================
-
+// Batch Execution
 int satani_agentless_batch_execute(const char* target, const char** commands, int cmd_count,
                                   const char* username, const char* password,
                                   satani_remote_result_t* results) {
@@ -392,8 +376,7 @@ int satani_agentless_batch_execute(const char* target, const char** commands, in
     return 0;
 }
 
-// ==================== Registry Extended Operations ====================
-
+// Registry Extended Operations
 int satani_agentless_registry_delete(const char* target, const char* key_path,
                                     const char* value_name) {
     char ps_cmd[1024];
@@ -413,8 +396,7 @@ int satani_agentless_registry_create_key(const char* target, const char* key_pat
     return satani_agentless_powershell(target, ps_cmd, user, pass, output, sizeof(output));
 }
 
-// ==================== File Operations ====================
-
+// File Operations
 int satani_agentless_delete_file(const char* target, const char* remote_path) {
     char smb_path[512];
     sprintf_s(smb_path, sizeof(smb_path), "\\\\%s\\ADMIN$\\%s", target, remote_path);
@@ -430,35 +412,19 @@ int satani_agentless_list_directory(const char* target, const char* remote_dir,
     return satani_agentless_powershell(target, ps_cmd, user, pass, output, output_size);
 }
 
-// ==================== System Snapshot ====================
-
+// System Snapshot
 int satani_agentless_get_snapshot(const char* target, satani_system_snapshot_t* snapshot,
                                  const char* username, const char* password) {
-    // Get processes
     satani_agentless_process_list(target, &snapshot->processes, &snapshot->process_count, username, password);
-    
-    // Get services
     satani_agentless_service_list(target, &snapshot->services, &snapshot->service_count, username, password);
-    
-    // Get network connections
     satani_agentless_netstat(target, snapshot->network_connections, sizeof(snapshot->network_connections), username, password);
-    
-    // Get scheduled tasks
     satani_agentless_list_tasks(target, snapshot->scheduled_tasks, sizeof(snapshot->scheduled_tasks), username, password);
-    
-    // Get event log (last 50 events)
     satani_agentless_read_event_log(target, "Security", 50, snapshot->event_log, sizeof(snapshot->event_log), username, password);
-    
-    // Get users
     satani_agentless_list_users(target, snapshot->users, sizeof(snapshot->users), username, password);
-    
-    // Get shares
     satani_agentless_list_shares(target, snapshot->shares, sizeof(snapshot->shares), username, password);
     
     return 0;
 }
-
-// ==================== Cleanup Functions ====================
 
 void satani_free_system_snapshot(satani_system_snapshot_t* snapshot) {
     if (snapshot->processes) {

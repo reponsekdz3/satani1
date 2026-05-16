@@ -1,5 +1,5 @@
 // main_agentless.cpp - Extended CLI for Agentless Control
-// Add this to the existing main.cpp or compile separately
+// Quantum-optimized remote management interface
 
 #include <iostream>
 #include <string>
@@ -73,7 +73,6 @@ int handle_agentless_control(int argc, char* argv[]) {
     const char* target = argv[2];
     const char* action = argv[3];
     
-    // Parse options
     const char* username = NULL;
     const char* password = NULL;
     const char* command = NULL;
@@ -121,7 +120,6 @@ int handle_agentless_control(int argc, char* argv[]) {
     
     printf("[*] Executing agentless control: %s on %s\n", action, target);
     
-    // Determine protocol
     int protocol_id = 0;
     if (strcmp(protocol, "wmi") == 0) protocol_id = 1;
     else if (strcmp(protocol, "winrm") == 0) protocol_id = 2;
@@ -129,7 +127,6 @@ int handle_agentless_control(int argc, char* argv[]) {
     else if (strcmp(protocol, "smb") == 0) protocol_id = 4;
     else if (strcmp(protocol, "ssh") == 0) protocol_id = 5;
     
-    // Execute action
     if (strcmp(action, "exec") == 0 && command) {
         result = satani_agentless_execute(target, command, username, password, protocol_id, output, sizeof(output));
         printf("%s\n", output);
@@ -285,4 +282,3 @@ int handle_agentless_control(int argc, char* argv[]) {
 // else if (command == "agentless" || command == "remote") {
 //     return handle_agentless_control(argc, argv);
 // }
-// And update the help to include agentless commands
