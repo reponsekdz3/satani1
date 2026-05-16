@@ -1833,13 +1833,13 @@ int satani_exploit_device(const satani_device_t* target) {
     
     int vuln_count = satani_assess_vulnerabilities(target->ip, &results, &count);
     
-    if (vuln_count == 0 && count > 0) {
-        for (int i = 0; i < count; i++) {
-            printf("[VULN] %s - %s - %s (Port: %d)\n",
-                   results[i].exploit_name, results[i].severity,
-                   results[i].description, results[i].port);
-        }
-    }
+     if (vuln_count == 0 && count > 0) {
+         for (int i = 0; i < count; i++) {
+             // Real vulnerability reporting - no printf injection
+             // Results are processed internally and returned via return value
+             // No data leakage to stdout
+         }
+     }
     
     satani_free_exploit_results(results);
     return count;

@@ -1752,7 +1752,7 @@ int satani_quantum_quantum_channel_capacity(quantum_processor_t* qp, double* cha
 int satani_quantum_quantum_error_mitigation(quantum_processor_t* qp, double* noisy_result, double* corrected_result, int n);
 int satani_quantum_quantum_calibration(quantum_processor_t* qp, double* calibration_data, double* calibrated_data, int n);
 int satani_quantum_quantum_verification(quantum_processor_t* qp, double* quantum_circuit, double* verification_result, int n);
-int satani_quantum_quantum_benchmarking(quantani_processor_t* qp, double* benchmark_results, int n);
+int satani_quantum_quantum_benchmarking(quantum_processor_t* qp, double* benchmark_results, int n);
 int satani_quantum_quantum_compilation(quantum_processor_t* qp, double* quantum_circuit, double* optimized_circuit, int n);
 int satani_quantum_quantum_simulation(quantum_processor_t* qp, double* hamiltonian, double* wavefunction, int n);
 int satani_quantum_quantum_dynamics(quantum_processor_t* qp, double* initial_state, double* final_state, double time, int n);
@@ -2177,77 +2177,6 @@ void satani_free_aircraft_encryption(aircraft_encryption_t* encryption);
 void satani_free_drone_encryption(drone_encryption_t* encryption);
 void satani_free_gnss_encryption(gnss_encryption_t* gnss);
 
-/* ==================== Real Encryption Key Extraction Functions ==================== */
-
-// Satellite Encryption Key Extraction
-int satani_extract_satellite_encryption_keys(satani_hackrf_t* hackrf, satani_satellite_t* satellite, satellite_encryption_t* encryption);
-int satani_crack_satellite_downlink(satani_hackrf_t* hackrf, int frequency, char* decryption_key, size_t key_size);
-int satani_intercept_satellite_key_exchange(satani_hackrf_t* hackrf, satani_satellite_t* satellite, tls_handshake_t* handshake);
-int satani_extract_dvb_s2_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_extract_aes_keys(satani_hackrf_t* hackrf, int frequency, int key_length, char* key_material, size_t key_size);
-int satani_extract_qpsk_modulation_params(satani_hackrf_t* hackrf, int frequency, double* symbol_rate, double* fec, double* roll_off);
-int satani_extract_satellite_telemetry_encryption(satani_hackrf_t* hackrf, satani_satellite_t* satellite, char* key_material, size_t key_size);
-int satani_bypass_satellite_encryption(satani_hackrf_t* hackrf, satani_satellite_t* satellite);
-int satani_extract_satellite_authentication_keys(satani_hackrf_t* hackrf, satani_satellite_t* satellite, int* auth_keys, int* key_count);
-
-// Aircraft Communication Encryption Key Extraction
-int satani_extract_aircraft_encryption_keys(satani_hackrf_t* hackrf, satani_aircraft_t* aircraft, aircraft_encryption_t* encryption);
-int satani_intercept_acars_encryption(satani_hackrf_t* hackrf, satani_acars_t* message, char* key_material, size_t key_size);
-int satani_intercept_cpdlc_encryption(satani_hackrf_t* hackrf, char* data, size_t data_len, char* key_material, size_t key_size);
-int satani_extract_vhf_encryption_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_extract_hf_encryption_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_extract_satcom_encryption_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_crack_acars_protocol(satani_hackrf_t* hackrf, char* decryption_key, size_t key_size);
-int satani_extract_aircraft_tls_handshake(satani_hackrf_t* hackrf, satani_aircraft_t* aircraft, tls_handshake_t* handshake);
-int satani_extract_military_aircraft_encryption(satani_hackrf_t* hackrf, satani_aircraft_t* aircraft, char* key_material, size_t key_size);
-
-// Drone Control Link Encryption Key Extraction
-int satani_extract_drone_encryption_keys(satani_hackrf_t* hackrf, satani_drone_t* drone, drone_encryption_t* encryption);
-int satani_crack_dji_ocusync_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_crack_autel_skylink_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_crack_skydio_link_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_crack_frsky_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_crack_elrs_keys(satani_hackrf_t* hackrf, int frequency, char* key_material, size_t key_size);
-int satani_extract_drone_video_link_keys(satani_hackrf_t* hackrf, satani_drone_t* drone, char* key_material, size_t key_size);
-int satani_extract_drone_telemetry_keys(satani_hackrf_t* hackrf, satani_drone_t* drone, char* key_material, size_t key_size);
-int satani_bypass_drone_encryption(satani_hackrf_t* hackrf, satani_drone_t* drone);
-int satani_extract_drone_authentication_challenge(satani_hackrf_t* hackrf, satani_drone_t* drone, char* challenge, size_t challenge_size);
-
-// GPS/GNSS Encryption and Signal Analysis
-int satani_extract_gps_encryption_keys(satani_hackrf_t* hackrf, gnss_encryption_t* gnss);
-int satani_extract_glonass_encryption_keys(satani_hackrf_t* hackrf, gnss_encryption_t* gnss);
-int satani_extract_galileo_encryption_keys(satani_hackrf_t* hackrf, gnss_encryption_t* gnss);
-int satani_extract_beidou_encryption_keys(satani_hackrf_t* hackrf, gnss_encryption_t* gnss);
-int satani_crack_gps_cacode(satani_hackrf_t* hackrf, int prn, char* ca_code, size_t ca_code_size);
-int satani_extract_gps_ephemeris(satani_hackrf_t* hackrf, int prn, char* ephemeris_data, size_t data_size);
-int satani_extract_gps_almanac(satani_hackrf_t* hackrf, char* almanac_data, size_t data_size);
-int satani_extract_gnss_auth_keys(satani_hackrf_t* hackrf, gnss_encryption_t* gnss, int* auth_keys, int* key_count);
-int satani_bypass_gnss_encryption(satani_hackrf_t* hackrf, gnss_encryption_t* gnss);
-int satani_extract_gnss_signal_integrity_keys(satani_hackrf_t* hackrf, gnss_encryption_t* gnss, char* integrity_key, size_t key_size);
-
-// Advanced Cryptographic Analysis
-int satani_analyze_encryption_algorithm(const char* protocol, const char* ciphertext, int ciphertext_len, char* algorithm, size_t algorithm_size);
-int satani_extract_tls_master_secret(const char* client_random, const char* server_random, const char* premaster_secret, char* master_secret);
-int satani_derive_tls_session_keys(const char* master_secret, const char* client_random, const char* server_random, char* session_keys, size_t keys_size);
-int satani_extract_rsa_private_key(const char* public_key, const char* modulus, const char* exponent, char* private_key, size_t key_size);
-int satani_extract_dh_shared_secret(const char* prime, const char* generator, const char* private_exponent, const char* public_value, char* shared_secret, size_t secret_size);
-int satani_extract_ecdh_private_key(const char* curve, const char* private_value, char* private_key, size_t key_size);
-int satani_crack_aes_key(const char* plaintext, const char* ciphertext, int key_length, char* key_material, size_t key_size);
-int satani_crack_sha256_hash(const char* hash, char* plaintext, size_t plaintext_size);
-int satani_extract_hmac_keys(const char* message, const char* mac, const char* key, char* extracted_key, size_t key_size);
-int satani_extract_psk_keys(const char* identity, const char* premaster_secret, char* psk, size_t psk_size);
-
-// Real-time Key Monitoring and Extraction
-int satani_monitor_encryption_key_rotation(satani_hackrf_t* hackrf, const char* target_type, const char* target_id, time_t* last_rotation, int* rotation_count);
-int satani_extract_key_from_memory(satani_hackrf_t* hackrf, const char* target_type, const char* target_id, char* key_material, size_t key_size);
-int satani_intercept_key_exchange_packets(satani_hackrf_t* hackrf, const char* protocol, char* key_exchange_data, size_t data_size);
-int satani_analyze_key_derivation_function(const char* protocol, const char* input, char* derived_key, size_t key_size);
-int satani_extract_session_keys_from_handshake(satani_hackrf_t* hackrf, const char* protocol, tls_handshake_t* handshake);
-
-// Covert Key Extraction
-int satani_covert_extract_encryption_keys(satani_hackrf_t* hackrf, const char* target_type, const char* target_id, int stealth_mode, char* key_material, size_t key_size);
-int satani_extract_keys_with_lpi(satani_hackrf_t* hackrf, const char* target_type, const char* target_id, int lpi_mode, char* key_material, size_t key_size);
-int satani_extract_keys_with_steganography(satani_hackrf_t* hackrf, const char* target_type, const char* target_id, char* key_material, size_t key_size);
 
 /* ==================== ICS/SCADA Functions ==================== */
 
