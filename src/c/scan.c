@@ -1,3 +1,4 @@
+/* scan.c - Core network scanning functionality */
 #include <windows.h>
 #include <winhttp.h>
 #include <winsock2.h>
@@ -26,6 +27,8 @@ typedef struct {
     int* result_count;
     CRITICAL_SECTION* lock;
 } scan_work_item_t;
+
+// Core network scanning implementation
 
 static int get_local_ip_and_mask(char* ip, char* mask) {
     ULONG buflen = 0;

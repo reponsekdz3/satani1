@@ -24,17 +24,32 @@ class Colors:
     CYAN = '\033[96m'
     END = '\033[0m'
 
+SATANI_VERSION = "2.0"
+SATANI_FEATURES = [
+    "Real USB device enumeration and control",
+    "HackRF spectrum analysis",
+    "Vulnerability assessment",
+    "Remote command execution (SSH/WinRM/WMI/PsExec)",
+    "Process and service control",
+    "Wake-on-LAN",
+    "Network scanning with ARP"
+]
+
 def print_header():
     """Print framework header"""
     print(f"{Colors.CYAN}")
-    print("""
-    ╔═══════════════════════════════════════════════════════════╗
-    ║          SATANI - Cybersecurity Framework v1.0           ║
-    ║              Python Build Orchestrator                   ║
-    ║                  [AUTHORIZED USE ONLY]                   ║
-    ╚═══════════════════════════════════════════════════════════╝
+    print(f"""
+     ╔═══════════════════════════════════════════════════════════╗
+     ║          SATANI - Cybersecurity Framework v{SATANI_VERSION}           ║
+     ║              Python Build Orchestrator                   ║
+     ║                  [AUTHORIZED USE ONLY]                   ║
+     ╚═══════════════════════════════════════════════════════════╝
     """)
     print(f"{Colors.END}")
+    print(f"{Colors.BLUE}Features:{Colors.END}")
+    for feature in SATANI_FEATURES:
+        print(f"  • {feature}")
+    print()
 
 def run_command(cmd, cwd=None, check=True, verbose=False):
     """Run a command and return the result."""

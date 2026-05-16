@@ -5,8 +5,6 @@
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#include <winusb.h>
-#include <usb.h>
 #include <setupapi.h>
 #include <devpropdef.h>
 #include <stdio.h>
@@ -15,10 +13,16 @@
 #include <process.h>
 #include <tlhelp32.h>
 #include <winternl.h>
+#include <powrprof.h>
+#include <wlanapi.h>
+#include <iptypes.h>
+#include <iphlpapi.h>
 
 #pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "winusb.lib")
 #pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "wlanapi.lib")
+#pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "powrprof.lib")
 
 // USB device information structure
 typedef struct {
