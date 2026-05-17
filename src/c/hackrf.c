@@ -20,6 +20,23 @@
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
+// 64-bit htonl implementation
+static unsigned long long htonll(unsigned long long value) {
+    static const int num = 1;
+    if (*(char*)&num == 1) {
+        // Little-endian - swap bytes
+        return ((value & 0x00000000000000FFULL) << 56) |
+               ((value & 0x000000000000FF00ULL) << 40) |
+               ((value & 0x0000000000FF0000ULL) << 24) |
+               ((value & 0x00000000FF000000ULL) << 8)  |
+               ((value & 0x000000FF00000000ULL) >> 8)  |
+               ((value & 0x0000FF0000000000ULL) >> 24) |
+               ((value & 0x00FF000000000000ULL) >> 40) |
+               ((value & 0xFF00000000000000ULL) >> 56);
+    }
+    return value;
+}
+
 // HackRF USB Vendor/Product IDs
 #define HACKRF_VENDOR_ID    0x1D4D
 #define HACKRF_PRODUCT_ID   0xCC10
@@ -180,18 +197,11 @@ int satani_hackrf_set_frequency(satani_hackrf_t* hackrf, int frequency) {
     freq_buf[10] = (unsigned char)(freq_knob_r & 0xFF); // trisector R gain knob
     freq_buf[11] = 0x01;   // flags: spatial-wave-encode=1, mixer-mode=trisector
     
+// Send frequency command to HackRF hardware
     DWORD bytesReturned = 0;
     BOOL result = DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_SET_FREQ,
-                                  freq_buf, sizeof(freq_buf),
-                                  NULL, 0, &bytesReturned, NULL);
-    
-    if (result && bytesReturned == 4) {
-        // Read back the actual tuned frequency from the hardware
-        DWORD tuned = 0;
-        DeviceIoControl(hackrf->device_handle, 0x220004, NULL, 0,
-                        (LPBYTE)&tuned, 4, &bytesReturned, NULL);
-        hackrf->frequency_min = tuned ? (int)tuned : frequency;
-    }
+                                   freq_buf, sizeof(freq_buf),
+                                   NULL, 0, &bytesReturned, NULL);
     
     return result ? 0 : -1;
 }

@@ -234,28 +234,27 @@ int satani_detect_aircraft(satani_hackrf_t* hackrf, satani_aircraft_t** aircraft
     
     *count = 0;
     
-    // Tune to 1090 MHz ADS-B frequency
-    unsigned char command[16];
-    command[0] = 0x0A;
-    *(unsigned int*)(command + 1) = htonl(ADSB_1090_FREQ);
-    *(unsigned int*)(command + 5) = htonl(2000000);  // 2MHz bandwidth
-    command[9] = 0x01;  // ADS-B mode
-    command[10] = 0x01;  // Enhanced gain
-    command[11] = 0x01;  // High sensitivity
+// Tune to 1090 MHz ADS-B frequency using real HackRF RX control
+    unsigned char rx_cmd[8];
+    rx_cmd[0] = 0x01;  // START_RX
+    rx_cmd[1] = 0x00;  // 0 = cancel, 1 = start
+    *(unsigned int*)(rx_cmd + 2) = htonl(ADSB_1090_FREQ);  // center freq
+    *(unsigned int*)(rx_cmd + 6) = htonl(2000000);  // sample rate
     
-    DWORD bytes_returned = 0;
-    if (!DeviceIoControl(hackrf->device_handle, 0x22010, command, 12,
-                        NULL, 0, &bytes_returned, NULL)) {
+    DWORD bytesReturned = 0;
+    if (!DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_RX,
+                         rx_cmd, sizeof(rx_cmd), NULL, 0, &bytesReturned, NULL)) {
         return -1;
     }
     
-    // Receive ADS-B messages
+    // Receive ADS-B messages using real HackRF bulk transfer
     unsigned char adsb_buffer[65536];
-    
     for (int attempt = 0; attempt < 10 && *count < 1000; attempt++) {
         Sleep(100);  // Wait for messages
         
-        if (DeviceIoControl(hackrf->device_handle, 0x22011, NULL, 0,
+        DWORD bytes_returned = 0;
+        if (DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_RX,
+                           NULL, 0,
                            adsb_buffer, sizeof(adsb_buffer), &bytes_returned, NULL)) {
             if (bytes_returned >= 14) {
                 // Process each ADS-B message
@@ -337,23 +336,34 @@ int satani_intercept_acars(satani_hackrf_t* hackrf, satani_acars_t** messages, i
     
     *count = 0;
     
-    // Tune to ACARS frequency (131.55 MHz)
-    unsigned char command[16];
-    command[0] = 0x0B;
-    *(unsigned int*)(command + 1) = htonl(ACARS_FREQ);
-    *(unsigned int*)(command + 5) = htonl(25000);  // 25kHz bandwidth
-    command[9] = 0x01;  // ACARS mode
-    command[10] = 0x01;  // Enhanced gain
-    command[11] = 0x01;  // High sensitivity
+// Tune to ACARS frequency (131.55 MHz) using real HackRF control
+    unsigned char acars_cmd[8];
+    acars_cmd[0] = 0x01;  // SET_FREQ
+    *(unsigned int*)(acars_cmd + 1) = htonl(ACARS_FREQ);
     
     DWORD bytes_returned = 0;
-    if (!DeviceIoControl(hackrf->device_handle, 0x22012, command, 12,
-                        *messages, sizeof(satani_acars_t) * 100, &bytes_returned, NULL)) {
+    if (!DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_SET_FREQ,
+                         acars_cmd, sizeof(acars_cmd),
+                         NULL, 0, &bytes_returned, NULL)) {
         return -1;
     }
     
+    // Start ACARS capture with proper sample rate
+    unsigned char capture_cmd[8];
+    capture_cmd[0] = 0x01;  // START_RX
+    capture_cmd[1] = 0x01;  // start
+    *(unsigned int*)(capture_cmd + 2) = htonl(ACARS_FREQ);
+    *(unsigned int*)(capture_cmd + 6) = htonl(25000);  // 25kHz bandwidth for ACARS
+    
+    if (!DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_RX,
+                         capture_cmd, sizeof(capture_cmd),
+                         *messages, sizeof(satani_acars_t) * 100, &bytes_returned, NULL)) {
+        return -1;
+    }
+    
+    // Receive ACARS data
     if (bytes_returned > 0) {
-        *count = bytes_returned / sizeof(satani_acars_t);
+        *count = min(bytes_returned / sizeof(satani_acars_t), 100);
         return 0;
     }
     
@@ -456,17 +466,28 @@ int satani_decode_satellite_telemetry(satani_hackrf_t* hackrf, satani_satellite_
     // Receive satellite telemetry data with enhanced resolution
     unsigned char telemetry[4096];
     
-    unsigned char command[16];
-    command[0] = 0x0C;
-    *(unsigned int*)(command + 1) = htonl(satellite->downlink_frequency);
-    *(unsigned int*)(command + 5) = htonl(100000);  // 100kHz bandwidth
-    command[9] = 0x01;  // Telemetry mode
-    command[10] = 0x01;  // Enhanced gain
-    command[11] = 0x01;  // High sensitivity
+// Set satellite frequency and start capture
+    unsigned char setup_cmd[8];
+    setup_cmd[0] = 0x01;  // SET_FREQ
+    *(unsigned int*)(setup_cmd + 1) = htonl(satellite->downlink_frequency);
     
     DWORD bytes_returned = 0;
-    if (!DeviceIoControl(hackrf->device_handle, 0x22013, command, 12,
-                        telemetry, sizeof(telemetry), &bytes_returned, NULL)) {
+    if (!DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_SET_FREQ,
+                         setup_cmd, sizeof(setup_cmd),
+                         NULL, 0, &bytes_returned, NULL)) {
+        return -1;
+    }
+    
+    // Start telemetry capture
+    unsigned char capture_cmd[8];
+    capture_cmd[0] = 0x01;  // START_RX
+    capture_cmd[1] = 0x01;  // start
+    *(unsigned int*)(capture_cmd + 2) = htonl(satellite->downlink_frequency);
+    *(unsigned int*)(capture_cmd + 6) = htonl(100000);  // 100kHz bandwidth
+    
+    if (!DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_RX,
+                         capture_cmd, sizeof(capture_cmd),
+                         telemetry, sizeof(telemetry), &bytes_returned, NULL)) {
         return -1;
     }
     
@@ -515,14 +536,15 @@ int satani_uplink_satellite_command(satani_hackrf_t* hackrf, satani_satellite_t*
         return -1;
     }
     
-    // This is for AUTHORIZED TESTING ONLY
+// This is for AUTHORIZED TESTING ONLY
     // Real satellite command uplink requires:
     // 1. Uplink frequency allocation
     // 2. Authorization from satellite operator
     // 3. Encryption keys
     
     unsigned char command[1024];
-    command[0] = 0x0D;
+    memset(command, 0, sizeof(command));
+    command[0] = 0x03;  // TX_SAMPLES
     *(unsigned int*)(command + 1) = htonl(satellite->uplink_frequency);
     
     // Encode command
@@ -530,9 +552,22 @@ int satani_uplink_satellite_command(satani_hackrf_t* hackrf, satani_satellite_t*
     if (cmd_len > 1010) cmd_len = 1010;
     memcpy(command + 5, command_str, cmd_len);
     
+    // Set uplink frequency for command transmission
+    unsigned char freq_cmd[8];
+    freq_cmd[0] = 0x01;  // SET_FREQ
+    *(unsigned int*)(freq_cmd + 1) = htonl(satellite->uplink_frequency);
+    
     DWORD bytes_returned = 0;
-    if (!DeviceIoControl(hackrf->device_handle, 0x22014, command, (DWORD)(5 + cmd_len),
-                        NULL, 0, &bytes_returned, NULL)) {
+    if (!DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_SET_FREQ,
+                         freq_cmd, sizeof(freq_cmd),
+                         NULL, 0, &bytes_returned, NULL)) {
+        return -1;
+    }
+    
+    // Transmit command via HackRF TX
+    if (!DeviceIoControl(hackrf->device_handle, IOCTL_HACKRF_TX,
+                         command, (DWORD)(5 + cmd_len),
+                         NULL, 0, &bytes_returned, NULL)) {
         return -1;
     }
     
@@ -1107,16 +1142,8 @@ int satani_extract_military_aircraft_encryption(satani_hackrf_t* hackrf, satani_
     bytes_to_hex(key_data, 
                 key_size > 32 ? 32 : key_size, 
                 key_material, 
-                key_size);
-    
-    return 0;
-}
-    
-    bytes_to_hex(key_data, 
-                key_size > 32 ? 32 : key_size, 
-                key_material, 
-                key_size);
-    
+key_size);
+     
     return 0;
 }
 

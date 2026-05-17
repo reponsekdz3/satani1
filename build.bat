@@ -13,7 +13,7 @@ echo.
 
 REM Get the directory where this script is located
 set SCRIPT_DIR=%~dp0
-cd /d %SCRIPT_DIR%
+cd /d "%SCRIPT_DIR%"
 
 REM Define directories
 set ASM_DIR=%SCRIPT_DIR%..\src\asm
@@ -78,6 +78,8 @@ if exist "%ASM_DIR%\checksum.asm" (
     ) else (
         echo     - checksum.asm compiled
     )
+) else (
+    echo     - checksum.asm not found, skipping
 )
 
 REM Compile C (all C files)
