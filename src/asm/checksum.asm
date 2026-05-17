@@ -419,22 +419,257 @@ parse_mac_exit:
 
 parse_mac_address ENDP
 
-; Quantum-optimized port mask checking
-check_port_mask PROC PUBLIC
-    ; Check if port is in bitmask using SIMD
-    ; Input: ECX = port, EDX = bitmask pointer
-    ; Output: EAX = 1 if open, 0 if closed
-    
-    ; Use bit test instruction for O(1) lookup
-    mov eax, 1
-    shl eax, cl
-    test eax, dword ptr [rdx + (rcx / 32) * 4]
-    setnz al
-    ret
+; ==================== Real Network Checksum Functions ====================
+;
+; x64 Windows calling convention for all checksum functions:
+;   RCX = pointer to packet buffer
+;   RDX = packet/buffer total length (bytes)
+;   Returns 16-bit checksum in AX
 
-check_port_mask ENDP
+; --- RFC 1071 Internet Checksum (IP header) ---
+; Covers the IP header with bytes 10-11 zeroed.
+; Algorithm: 16-bit ones-complement sum of all 16-bit words.
+ip_checksum PROC PUBLIC
+    ; Prologue
+    push    rbp
+    push    rbx
+    push    rsi
+
+    mov     rbp, rsp
+
+    ; Zero the 16-bit checksum field in the IP header (bytes 10-11)
+    mov     byte ptr [rcx + 10], 0
+    mov     byte ptr [rcx + 11], 0
+
+    xor     rax, rax        ; 32-bit accumulator = 0
+    xor     rbx, rbx        ; index = 0
+    mov     rsi, rdx        ; total length
+
+ip_checksum_loop:
+    cmp     rbx, rsi
+    jge     ip_checksum_fold
+
+    movzx   rcx, word ptr [rcx + rbx]   ; load 16-bit word
+    add     rax, rcx                     ; add to accumulator
+    jnc     ip_checksum_no_carry
+    inc     rax                          ; fold carry (add back the carry bit)
+ip_checksum_no_carry:
+    add     rbx, 2                       ; advance by 2 bytes (16-bit word)
+    jmp     ip_checksum_loop
+
+ip_checksum_fold:
+    ; Fold 32-bit accumulator to 16 bits with one more carry fold
+    mov     rcx, rax
+    shr     rcx, 16
+    add     rax, rcx
+    jnc     ip_checksum_no_carry2
+    inc     rax
+ip_checksum_no_carry2:
+    and     rax, 0xFFFF                  ; keep only low 16 bits
+    not     ax                           ; one's complement → final IP checksum
+
+    ; Epilogue
+    pop     rsi
+    pop     rbx
+    pop     rbp
+    ret
+ip_checksum ENDP
+
+; --- RFC 793 TCP Checksum ---
+; Builds and sums: pseudo-header (src+4B, dst+4B, zero, prot=6, tcp_len+2B)
+;                   + TCP header bytes + TCP data bytes
+; Returns 16-bit ones-complement checksum in AX.
+tcp_checksum PROC PUBLIC
+    push    rbp
+    push    rbx
+    push    rsi
+    push    rdi
+
+    mov     rbp, rsp
+    xor     rax, rax        ; 32-bit accumulator = 0
+
+    ; --- Build pseudo-header sum directly into accumulator ---
+    ; IP source address at offset 12 (4 bytes)
+    movzx   rbx, word ptr [rcx + 12]
+    add     rax, rbx
+    jnc     tcp_ps_no_c1
+    inc     rax
+tcp_ps_no_c1:
+    movzx   rbx, word ptr [rcx + 14]   ; 2nd half-word of src IP
+    add     rax, rbx
+    jnc     tcp_ps_no_c2
+    inc     rax
+tcp_ps_no_c2:
+
+    ; IP destination address at offset 16 (4 bytes)
+    movzx   rbx, word ptr [rcx + 16]
+    add     rax, rbx
+    jnc     tcp_ps_no_c3
+    inc     rax
+tcp_ps_no_c3:
+    movzx   rbx, word ptr [rcx + 18]
+    add     rax, rbx
+    jnc     tcp_ps_no_c4
+    inc     rax
+tcp_ps_no_c4:
+
+    ; Reserved (1 byte) + Protocol (TCP=6) = 0x00 0x06 at offset 23-22
+    ; Represented as a single 16-bit word 0x0006
+    movzx   rbx, word ptr [rcx + 22]
+    add     rax, rbx
+    jnc     tcp_ps_no_c5
+    inc     rax
+tcp_ps_no_c5:
+
+    ; TCP segment total length (RDX) at offset 20-23
+    mov     rbx, rdx
+    shr     rbx, 16
+    add     rax, rbx
+    jnc     tcp_ps_no_c6
+    inc     rax
+tcp_ps_no_c6:
+    movzx   rbx, word ptr [rcx + 20]   ; low 16 bits of TCP length
+    add     rax, rbx
+    jnc     tcp_ps_no_c7
+    inc     rax
+tcp_ps_no_c7:
+
+    ; --- Sum TCP header and data bytes (stride 2, byte 0 as MSB) ---
+    ; Offset 0 of buffer = first byte of IP header → TCP data starts at (IHL*4)
+    ; We use RCX as packet base; TCP header offset = (RCX[0] & 0x0F) * 4
+    movzx   rbx, byte ptr [rcx]         ; IHL field
+    and     rbx, 0x0F
+    shl     rbx, 2                       ; IP header length in bytes
+    add     rcx, rbx                     ; RCX now points to TCP header start
+    sub     rdx, rbx                     ; RDX = TCP segment length
+
+    xor     rbx, rbx                     ; byte index = 0
+    mov     rsi, rdx                     ; segment length copy
+tcp_checksum_loop:
+    cmp     rbx, rsi
+    jge     tcp_checksum_fold
+
+    movzx   rdi, word ptr [rcx + rbx]   ; 16-bit word from TCP stream
+    add     rax, rdi
+    jnc     tcp_no_carry
+    inc     rax
+tcp_no_carry:
+    add     rbx, 2
+    jmp     tcp_checksum_loop
+
+tcp_checksum_fold:
+    mov     rcx, rax
+    shr     rcx, 16
+    add     rax, rcx
+    jnc     tcp_fold_ok
+    inc     rax
+tcp_fold_ok:
+    and     rax, 0xFFFF
+    not     ax                           ; 16-bit ones-complement → TCP checksum
+
+    pop     rdi
+    pop     rsi
+    pop     rbx
+    pop     rbp
+    ret
+tcp_checksum ENDP
+
+; --- RFC 768 UDP Checksum ---
+; Builds and sums: pseudo-header (src+4B, dst+4B, zero, proto=17, len+2B)
+;                   + UDP header + data
+udp_checksum PROC PUBLIC
+    push    rbp
+    push    rbx
+    push    rsi
+    push    rdi
+
+    mov     rbp, rsp
+    xor     rax, rax        ; 32-bit accumulator
+
+    ; --- Pseudo-header --- ;
+    ; src IP  (Offset 12-15)
+    movzx   rbx, word ptr [rcx + 12]
+    add     rax, rbx
+    jnc     udp_ps_c1
+    inc     rax
+udp_ps_c1:
+    movzx   rbx, word ptr [rcx + 14]
+    add     rax, rbx
+    jnc     udp_ps_c2
+    inc     rax
+udp_ps_c2:
+
+    ; dst IP  (Offset 16-19)
+    movzx   rbx, word ptr [rcx + 16]
+    add     rax, rbx
+    jnc     udp_ps_c3
+    inc     rax
+udp_ps_c3:
+    movzx   rbx, word ptr [rcx + 18]
+    add     rax, rbx
+    jnc     udp_ps_c4
+    inc     rax
+udp_ps_c4:
+
+    ; Zero + UDP protocol (17 = 0x11) at offset 22-23
+    movzx   rbx, word ptr [rcx + 22]
+    add     rax, rbx
+    jnc     udp_ps_c5
+    inc     rax
+udp_ps_c5:
+
+    ; UDP total length (RDX) into words [20-21] like IP length
+    mov     rbx, rdx
+    shr     rbx, 16
+    add     rax, rbx
+    jnc     udp_ps_c6
+    inc     rax
+udp_ps_c6:
+    add     rax, rdx                     ; low 16 bits of RDX (same as [RCX+20] for UDP)
+    jnc     udp_ps_c7
+    inc     rax
+udp_ps_c7:
+
+    ; --- UDP packet bytes (skip IP header) ---
+    movzx   rbx, byte ptr [rcx]         ; IHL field (% 4)
+    and     rbx, 0x0F
+    shl     rbx, 2
+    add     rcx, rbx                     ; RAX now at UDP start
+    sub     rdx, rbx                     ; length → UDP segment
+
+    xor     rbx, rbx
+    mov     rsi, rdx
+
+udp_checksum_loop:
+    cmp     rbx, rsi
+    jge     udp_checksum_fold
+    movzx   rdi, word ptr [rcx + rbx]
+    add     rax, rdi
+    jnc     udp_no_carry
+    inc     rax
+udp_no_carry:
+    add     rbx, 2
+    jmp     udp_checksum_loop
+
+udp_checksum_fold:
+    mov     rcx, rax
+    shr     rcx, 16
+    add     rax, rcx
+    jnc     udp_fold_ok
+    inc     rax
+udp_fold_ok:
+    and     rax, 0xFFFF
+    not     ax
+
+    pop     rdi
+    pop     rsi
+    pop     rbx
+    pop     rbp
+    ret
+udp_checksum ENDP
 
 ; Data section
+.data
 .data
 
 checksum_zero dq 0, 0, 0, 0

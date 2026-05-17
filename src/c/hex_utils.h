@@ -37,11 +37,11 @@ int buf_eq(const uint8_t* buf1, const uint8_t* buf2, size_t len);
 // Returns allocated buffer or NULL on failure
 uint8_t* alloc_buf(size_t size);
 
-// AES-128 ECB encryption (simplified - real implementation would use AES-NI or BCrypt)
-// This is a placeholder for demonstration - in production use proper AES implementation
+// AES-128 ECB encryption using Windows CNG BCrypt
+// PKCS#7 padding applied automatically; ECB mode requires no IV
 int encrypt_aes_ecb(const uint8_t* plaintext, size_t plaintext_len,
-                   const uint8_t* key, size_t key_len,
-                   uint8_t* ciphertext, size_t ciphertext_size);
+                    const uint8_t* key, size_t key_len,
+                    uint8_t* ciphertext, size_t ciphertext_size);
 
 // Derive TLS master secret from client_random, server_random, and premaster_secret
 // Uses real HMAC-SHA256 via BCrypt

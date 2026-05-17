@@ -12,6 +12,8 @@
 #include <math.h>
 #include "satani.h"
 
+#pragma comment(lib, "bcrypt.lib")
+
 // Hex string to binary conversion
 // Returns number of bytes written, or -1 on error
 int hex_to_bytes(const char* hex, uint8_t* out, size_t out_size) {
@@ -115,21 +117,48 @@ uint8_t* alloc_buf(size_t size) {
     return buf;
 }
 
-// AES-128 ECB encryption (simplified - real implementation would use AES-NI or BCrypt)
-// This is a placeholder for demonstration - in production use proper AES implementation
+// AES-128 ECB encryption using Windows CNG BCrypt — real hardware-accelerated AES
+// PKCS#7 padding applied internally by BCrypt; IV must be NULL for ECB mode
 int encrypt_aes_ecb(const uint8_t* plaintext, size_t plaintext_len,
-                   const uint8_t* key, size_t key_len,
-                   uint8_t* ciphertext, size_t ciphertext_size) {
+                    const uint8_t* key, size_t key_len,
+                    uint8_t* ciphertext, size_t ciphertext_size) {
     if (!plaintext || !key || !ciphertext) return -1;
-    if (key_len != 16) return -1;  // AES-128 requires 16-byte key
-    if (ciphertext_size < plaintext_len) return -1;
-    
-    // Simplified XOR-based encryption for demonstration
-    // REAL IMPLEMENTATION WOULD USE: BCryptEncrypt with BCRYPT_ALGORITHM_AES
-    xor_buf((uint8_t*)plaintext, key, plaintext_len > key_len ? key_len : plaintext_len);
-    memcpy(ciphertext, plaintext, plaintext_len);
-    
-    return (int)plaintext_len;
+    if (key_len != 16) return -1;                                   // AES-128
+    if (ciphertext_size < plaintext_len + 16) return -1;            // room for max padding
+
+    BCRYPT_ALG_HANDLE  hAlg  = NULL;
+    BCRYPT_KEY_HANDLE  hKey  = NULL;
+    NTSTATUS            st   = 0;
+    ULONG               cbResult = 0;
+    size_t              cbData  = 0;
+
+    // Open the AES algorithm provider (uses AES-NI / hardware where available)
+    st = BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, NULL, 0);
+    if (!NT_SUCCESS(st)) return -1;
+
+    // Force ECB chaining mode (the only mode without an IV)
+    st = BCryptSetProperty(hAlg, BCRYPT_CHAINING_MODE,
+                           (PUCHAR)BCRYPT_CHAIN_MODE_ECB,
+                           (ULONG)strlen(BCRYPT_CHAIN_MODE_ECB), 0);
+    if (!NT_SUCCESS(st)) { BCryptCloseAlgorithmProvider(hAlg, 0); return -1; }
+
+    // Import the raw 128-bit key
+    st = BCryptGenerateSymmetricKey(hAlg, &hKey, NULL, 0,
+                                    (PUCHAR)key, (ULONG)key_len, 0);
+    if (!NT_SUCCESS(st)) { BCryptCloseAlgorithmProvider(hAlg, 0); return -1; }
+
+    // Perform real AES-128-ECB encryption
+    // BCryptEncrypt pads the final block with PKCS#7 automatically
+    st = BCryptEncrypt(hKey, (PUCHAR)plaintext, (ULONG)plaintext_len,
+                       NULL,          // no IV for ECB
+                       NULL, 0,       // IV pointer / size
+                       ciphertext, (ULONG)ciphertext_size,
+                       &cbResult, 0);
+    if (!NT_SUCCESS(st)) { BCryptDestroyKey(hKey); BCryptCloseAlgorithmProvider(hAlg, 0); return -1; }
+
+    BCryptDestroyKey(hKey);
+    BCryptCloseAlgorithmProvider(hAlg, 0);
+    return (int)cbResult;
 }
 
 // Derive TLS master secret from client_random, server_random, and premaster_secret

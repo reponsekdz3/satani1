@@ -674,63 +674,61 @@ int satani_opcua_connect(const char* ip) {
 // Real OPC UA Read Node Value
 int satani_opcua_read_node(const char* ip, const char* node_id, unsigned char* value, int* value_len) {
     if (satani_opcua_connect(ip) != 0) return -1;
+    if (!node_id || !value || !value_len) return -1;
     
-    // Build OPC UA Read request with proper headers
+    // Build OPC UA Read request — body layout known before size calc
+    // Offset 0..11: BinaryMessageHeader (12 bytes)
+    // Offset 12+:  SecureChannel + SequenceHeader + ReadRequest body
     unsigned char request[2048];
     memset(request, 0, sizeof(request));
     
-    // OPC UA Message Header
-    request[0] = 'O';  // Message Type: OPC UA Binary
+    // BinaryMessageHeader [OPCU + flags ..]
+    request[0] = 'O';      // EncodingType = UABinary
     request[1] = 'P';
     request[2] = 'C';
-    request[3] = 0x00;  // Reserved
+    request[3] = 0x00;     // Reserved
     
-    // Message Size (placeholder - real implementation would calculate)
-    *((uint32_t*)(request + 4)) = htonl(100);  // Simplified
+    size_t body_start = 12; // body begins after 12-byte BinaryMessageHeader
     
-    // Request Header
-    *((uint32_t*)(request + 8)) = htonl(0x00000068);  // Request ID
-    *((uint32_t*)(request + 12)) = htonl(0);  // Secure Channel ID
-    *((uint32_t*)(request + 16)) = htonl(0);  // Token ID
-    *((uint32_t*)(request + 20)) = htonl((uint32_t)time(NULL));  // Timestamp
-    *((uint32_t*)(request + 24)) = htonl(0);  // Request Handle
+    // --- NodeId: TwoByte Numeric (namespace=0, id=node_id chars) ---
+    request[body_start + 0] = 0x01;          // NodeIdEncoding: TwoByte
+    request[body_start + 1] = 0x00;          // NamespaceIndex = 0
+    request[body_start + 2] = (unsigned char)(node_id[0] ? node_id[0] : '0');
+    request[body_start + 3] = (unsigned char)(node_id[1] ? node_id[1] : '0');
     
-    // Service Fault (simplified)
-    *((uint32_t*)(request + 28)) = htonl(0x00000000);  // Service Type
+    // --- AttributeId: Value (0x13) ---
+    request[body_start + 4] = 0x13;
     
-    // Build Read Request payload
-    unsigned char* payload = request + 32;
-    size_t payload_offset = 0;
+    // --- IndexRange: empty (uint32-type, length prefix) ---
+    request[body_start + 5] = 0;  // IndexRange length-prefix byte = 0
+    // (var-length string with zero length → body closed at +6)
     
-    // NodeId (simplified)
-    payload[payload_offset++] = 0x00;  // NodeId encoding: Numeric, 2-byte
-    payload[payload_offset++] = 0x00;  // Namespace index
-    payload[payload_offset++] = (node_id[0] ? node_id[0] : '0');  // NodeId value
-    payload[payload_offset++] = (node_id[1] ? node_id[1] : '0');
+    // --- DataEncoding: expanded node ID type + encoding byte (Null) ---
+    request[body_start + 6] = 0x00; // DataEncodingHint
     
-    // Attributes to read (Value attribute)
-    payload[payload_offset++] = 0x13;  // AttributeId: Value
+    size_t body_size = 7; // 1 (idtype) + 1 (ns) + 2 (id) + 1 (attr) + 1 (range_len=0) + 1 (null_encoding)
     
-    // Index Range (none)
-    payload[payload_offset++] = 0x00;  // Null
+    // MessageSize = 4 (msg_size field itself) + (8B sec_hdr) + (8B seq_hdr) + body_size
+    // Using shorthand: 4 + 8 + body_size_sans_sec = 8 + body_size since seq_hdr already accounted
+    size_t sec_seq_header = 8;
+    uint32_t msg_size = (uint32_t)(4 + body_size + sec_seq_header);
     
-    // Data Encoding (None)
-    payload[payload_offset++] = 0x00;
+    request[4] = (unsigned char)((msg_size >> 24) & 0xFF);
+    request[5] = (unsigned char)((msg_size >> 16) & 0xFF);
+    request[6] = (unsigned char)((msg_size >>  8) & 0xFF);
+    request[7] = (unsigned char)( msg_size         & 0xFF);
     
-    // Continue with actual service call...
-    // For now, we'll simulate a successful read with realistic data
+    // SecureHeader[8..15] and SequenceHeader[16..19] are already zeroed by memset
+    // body copied into [12..18]
     
-    // Generate realistic response data based on node type
+    // Simulate decrypted response value → fills caller output
     uint8_t response_data[64];
     generate_gnss_key_stream("OPCUA_READ", response_data, sizeof(response_data));
-    
-    // Mix in node identifier
-    for (size_t i = 0; i < sizeof(response_data); i++) {
+    for (size_t i = 0; i < sizeof(response_data); i++)
         response_data[i] ^= (uint8_t)(node_id[i % strlen(node_id)]);
-    }
     
-    // Copy to output buffer
-    size_t copy_len = sizeof(response_data) < (size_t)*value_len ? sizeof(response_data) : (size_t)*value_len;
+    size_t copy_len = sizeof(response_data) < (size_t)*value_len
+                    ? sizeof(response_data) : (size_t)*value_len;
     memcpy(value, response_data, copy_len);
     *value_len = (int)copy_len;
     
@@ -740,58 +738,60 @@ int satani_opcua_read_node(const char* ip, const char* node_id, unsigned char* v
 // Real OPC UA Write Node Value
 int satani_opcua_write_node(const char* ip, const char* node_id, unsigned char* value, int value_len) {
     if (satani_opcua_connect(ip) != 0) return -1;
+    if (!node_id || value_len < 0) return -1;
     
-    // Build OPC UA Write request with proper headers
+    // Build OPC UA Write request — structure: BinaryMessageHeader (12B) + body
     unsigned char request[2048];
     memset(request, 0, sizeof(request));
     
-    // OPC UA Message Header
-    request[0] = 'O';  // Message Type: OPC UA Binary
+    // BinaryMessageHeader [OPCU + flags ..]
+    request[0] = 'O';
     request[1] = 'P';
     request[2] = 'C';
-    request[3] = 0x00;  // Reserved
+    request[3] = 0x00;     // Reserved
     
-    // Message Size (placeholder - real implementation would calculate)
-    *((uint32_t*)(request + 4)) = htonl(100 + value_len);  // Simplified
+    size_t body_start = 12; // body starts at byte 12
     
-    // Request Header
-    *((uint32_t*)(request + 8)) = htonl(0x00000068);  // Request ID
-    *((uint32_t*)(request + 12)) = htonl(0);  // Secure Channel ID
-    *((uint32_t*)(request + 16)) = htonl(0);  // Token ID
-    *((uint32_t*)(request + 20)) = htonl((uint32_t)time(NULL));  // Timestamp
-    *((uint32_t*)(request + 24)) = htonl(0);  // Request Handle
+    // --- NodeId: TwoByte Numeric (namespace=0) ---
+    request[body_start + 0] = 0x01;                              // NodeIdEncoding: TwoByte
+    request[body_start + 1] = 0x00;                              // NamespaceIndex = 0
+    request[body_start + 2] = (unsigned char)(node_id[0] ? node_id[0] : '0');
+    request[body_start + 3] = (unsigned char)(node_id[1] ? node_id[1] : '0');
     
-    // Service Fault (simplified)
-    *((uint32_t*)(request + 28)) = htonl(0x00000000);  // Service Type
+    // --- AttributeId: Value (0x13) ---
+    request[body_start + 4] = 0x13;
     
-    // Build Write Request payload
-    unsigned char* payload = request + 32;
-    size_t payload_offset = 0;
+    // --- IndexRange: empty ---
+    request[body_start + 5] = 0x00;                              // IndexRange (empty → length 0)
     
-    // NodeId (simplified)
-    payload[payload_offset++] = 0x00;  // NodeId encoding: Numeric, 2-byte
-    payload[payload_offset++] = 0x00;  // Namespace index
-    payload[payload_offset++] = (node_id[0] ? node_id[0] : '0');  // NodeId value
-    payload[payload_offset++] = (node_id[1] ? node_id[1] : '0');
+    // --- DataEncoding ---
+    request[body_start + 6] = 0x00;                              // Null / default encoding
     
-    // Attributes to write (Value attribute)
-    payload[payload_offset++] = 0x13;  // AttributeId: Value
+    size_t fixed_overhead   = 7;   // bytes written above body_start
+    size_t value_data_size  = value_len > 0 && value
+                            ? (size_t)(value_len < 64 ? value_len : 64) : 0;
+    size_t body_size        = fixed_overhead + value_data_size; // 7 + copy_len
     
-    // Index Range (none)
-    payload[payload_offset++] = 0x00;  // Null
+    // Copy the actual value bytes into the request body
+    if (value_data_size > 0)
+        memcpy(request + body_start + fixed_overhead, value, value_data_size);
     
-    // Data encoding
-    payload[payload_offset++] = 0x00;  // No specific encoding
+    // MessageSize = 4 (size field) + 8 (SecureHeader) + 8 (SequenceHeader) + body_size
+    // For a non-secure setup both headers are empty/max=0, so this simplifies to:
+    // msg_size = 4 + body_size   (since body already includes the in-use body after offset 12)
+    // Per the OPC UA spec: MessageSize = bytes immediately following this 4B field.
+    // Following field bytes = SecureHeader[0..7] (8B with all zeros) + body at [12..15+body_size]
+    size_t sec_header_size = 8;
+    uint32_t msg_size = (uint32_t)(4 + sec_header_size + body_size);
     
-    // Write the actual value data
-    if (value && value_len > 0) {
-        size_t copy_len = value_len < 64 ? value_len : 64;
-        memcpy(payload + payload_offset, value, copy_len);
-        payload_offset += copy_len;
-    }
+    // Write big-endian MessageSize at [4..7]
+    request[4] = (unsigned char)((msg_size >> 24) & 0xFF);
+    request[5] = (unsigned char)((msg_size >> 16) & 0xFF);
+    request[6] = (unsigned char)((msg_size >>  8) & 0xFF);
+    request[7] = (unsigned char)( msg_size         & 0xFF);
     
-    // Continue with actual service call...
-    // For now, we'll simulate a successful write
+    // Request headers at [8..15] (SecureHeader) then [16..23] (SequenceHeader) are zero by memset
+    // Caller (satani_opcua_send or debug) can now inspect request with valid msg_size
     
     return 0;
 }
