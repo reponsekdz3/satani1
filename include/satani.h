@@ -2178,7 +2178,44 @@ void satani_free_drone_encryption(drone_encryption_t* encryption);
 void satani_free_gnss_encryption(gnss_encryption_t* gnss);
 
 
-/* ==================== ICS/SCADA Functions ==================== */
+// Hex string to binary conversion
+int hex_to_bytes(const char* hex, uint8_t* out, size_t out_size);
+
+// Binary to hex string conversion
+int bytes_to_hex(const uint8_t* in, size_t in_size, char* out, size_t out_size);
+
+// XOR two buffers together (in-place)
+void xor_buf(uint8_t* buf1, const uint8_t* buf2, size_t len);
+
+// Bit rotation functions
+uint32_t rotl32(uint32_t value, unsigned int count);
+uint64_t rotl64(uint64_t value, unsigned int count);
+uint32_t rotr32(uint32_t value, unsigned int count);
+uint64_t rotr64(uint64_t value, unsigned int count);
+
+// Constant-time buffer comparison
+int buf_eq(const uint8_t* buf1, const uint8_t* buf2, size_t len);
+
+// Safe buffer allocation
+uint8_t* alloc_buf(size_t size);
+
+// GNSS functions
+int generate_gnss_key_stream(const char* gnss_system, uint8_t* key_stream, size_t key_stream_size);
+int generate_gps_ca_code(int prn, uint8_t* ca_code, size_t ca_code_size);
+uint32_t compute_gps_crc24q(const uint8_t* data, size_t len);
+uint32_t compute_bds_bch(const uint8_t* data, size_t len);
+int encode_gps_ephemeris(double lat, double lon, double alt, uint8_t* ephemeris, size_t ephemeris_size);
+
+// AES encryption
+int encrypt_aes_ecb(const uint8_t* plaintext, size_t plaintext_len,
+                   const uint8_t* key, size_t key_len,
+                   uint8_t* ciphertext, size_t ciphertext_size);
+
+// TLS key derivation
+int derive_tls_master_secret(const char* client_random, const char* server_random,
+                           const char* premaster_secret, char* master_secret, size_t master_secret_size);
+
+// ==================== ICS/SCADA Functions ====================
 
 int satani_modbus_read(const char* ip, int unit_id, int function_code, int start_addr, int count, unsigned char* response);
 int satani_modbus_write(const char* ip, int unit_id, int function_code, int start_addr, int count, unsigned char* data);
