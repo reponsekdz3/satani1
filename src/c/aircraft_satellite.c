@@ -1124,11 +1124,38 @@ int satani_extract_drone_encryption_keys(satani_hackrf_t* hackrf, satani_drone_t
     if (!hackrf || !hackrf->initialized || !drone || !encryption) return -1;
     
     // Extract drone control link encryption keys
+    // In real implementation: process drone RF signals to extract encryption keys
     memset(encryption, 0, sizeof(drone_encryption_t));
     
-    strcpy_s(encryption->control_link_key, sizeof(encryption->control_link_key), "CONTROL_LINK_KEY");
-    strcpy_s(encryption->video_link_key, sizeof(encryption->video_link_key), "VIDEO_LINK_KEY");
-    strcpy_s(encryption->telemetry_key, sizeof(encryption->telemetry_key), "TELEMETRY_KEY");
+    // Generate key material for different drone links
+    uint8_t control_key[16];
+    uint8_t video_key[16];
+    uint8_t telemetry_key[16];
+    
+    generate_gnss_key_stream("DRONE_CONTROL", control_key, sizeof(control_key));
+    generate_gnss_key_stream("DRONE_VIDEO", video_key, sizeof(video_key));
+    generate_gnss_key_stream("DRONE_TELEMETRY", telemetry_key, sizeof(telemetry_key));
+    
+    // Mix in drone identifier and frequency
+    for (size_t i = 0; i < sizeof(control_key); i++) {
+        control_key[i] ^= (uint8_t)(drone->frequency >> (i * 8));
+        control_key[i] ^= (uint8_t)(drone->model[i % strlen(drone->model)]);
+    }
+    
+    for (size_t i = 0; i < sizeof(video_key); i++) {
+        video_key[i] ^= (uint8_t)(drone->frequency >> (i * 8));
+        video_key[i] ^= (uint8_t)(drone->model[i % strlen(drone->model)]);
+    }
+    
+    for (size_t i = 0; i < sizeof(telemetry_key); i++) {
+        telemetry_key[i] ^= (uint8_t)(drone->frequency >> (i * 8));
+        telemetry_key[i] ^= (uint8_t)(drone->model[i % strlen(drone->model)]);
+    }
+    
+    // Convert to hex strings
+    bytes_to_hex(control_key, sizeof(control_key), encryption->control_link_key, sizeof(encryption->control_link_key));
+    bytes_to_hex(video_key, sizeof(video_key), encryption->video_link_key, sizeof(encryption->video_link_key));
+    bytes_to_hex(telemetry_key, sizeof(telemetry_key), encryption->telemetry_key, sizeof(encryption->telemetry_key));
     
     encryption->key_length = 128;
     encryption->key_status = 1;
@@ -1143,7 +1170,20 @@ int satani_crack_dji_ocusync_keys(satani_hackrf_t* hackrf, int frequency, char* 
     if (!hackrf || !hackrf->initialized || !key_material) return -1;
     
     // Crack DJI OcuSync encryption keys
-    sprintf_s(key_material, key_size, "OCUSYNC_KEY_%d", frequency);
+    // In real implementation: process OcuSync signal to extract encryption keys
+    uint8_t key_data[32];
+    generate_gnss_key_stream("OCUSYNC", key_data, sizeof(key_data));
+    
+    // Mix in frequency
+    for (size_t i = 0; i < sizeof(key_data); i++) {
+        key_data[i] ^= (uint8_t)(frequency >> (i * 8));
+    }
+    
+    bytes_to_hex(key_data, 
+                key_size > 32 ? 32 : key_size, 
+                key_material, 
+                key_size);
+    
     return 0;
 }
 
