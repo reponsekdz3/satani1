@@ -80,27 +80,75 @@ if exist "%ASM_DIR%\checksum.asm" (
     )
 )
 
-REM Compile C (scan.c - core scanning functionality)
-echo [+] Compiling C module (scan.c)...
+REM Compile C (all C files)
+echo [+] Compiling C modules...
 cl -c -Fo"%SCAN_OBJ%" -I"%INCLUDE_DIR%" "%C_DIR%\scan.c" /W3 /O2
 if %ERRORLEVEL% NEQ 0 (
-    echo [!] C compilation failed!
+    echo [!] C compilation failed for scan.c!
     goto error
+) else (
+    echo     - scan.c compiled
 )
 
-REM Compile C++
-echo [+] Compiling C++ module (main.cpp)...
-cl -c -Fo"%MAIN_OBJ%" -I"%INCLUDE_DIR%" "%CPP_DIR%\main.cpp" /W3 /O2 /EHsc
+cl -c -Fo"%BUILD_DIR%\exploit_real.obj" -I"%INCLUDE_DIR%" "%C_DIR%\exploit_real.c" /W3 /O2
 if %ERRORLEVEL% NEQ 0 (
-    echo [!] C++ compilation failed!
+    echo [!] C compilation failed for exploit_real.c!
     goto error
+) else (
+    echo     - exploit_real.c compiled
 )
 
-REM Link
+cl -c -Fo"%BUILD_DIR%\aircraft_satellite.obj" -I"%INCLUDE_DIR%" "%C_DIR%\aircraft_satellite.c" /W3 /O2
+if %ERRORLEVEL% NEQ 0 (
+    echo [!] C compilation failed for aircraft_satellite.c!
+    goto error
+) else (
+    echo     - aircraft_satellite.c compiled
+)
+
+cl -c -Fo"%BUILD_DIR%\industrial_control.obj" -I"%INCLUDE_DIR%" "%C_DIR%\industrial_control.c" /W3 /O2
+if %ERRORLEVEL% NEQ 0 (
+    echo [!] C compilation failed for industrial_control.c!
+    goto error
+) else (
+    echo     - industrial_control.c compiled
+)
+
+cl -c -Fo"%BUILD_DIR%\drone_warfare.obj" -I"%INCLUDE_DIR%" "%C_DIR%\drone_warfare.c" /W3 /O2
+if %ERRORLEVEL% NEQ 0 (
+    echo [!] C compilation failed for drone_warfare.c!
+    goto error
+) else (
+    echo     - drone_warfare.c compiled
+)
+
+cl -c -Fo"%BUILD_DIR%\hackrf.obj" -I"%INCLUDE_DIR%" "%C_DIR%\hackrf.c" /W3 /O2
+if %ERRORLEVEL% NEQ 0 (
+    echo [!] C compilation failed for hackrf.c!
+    goto error
+) else (
+    echo     - hackrf.c compiled
+)
+
+cl -c -Fo"%BUILD_DIR%\hex_utils.obj" -I"%INCLUDE_DIR%" "%C_DIR%\hex_utils.c" /W3 /O2
+if %ERRORLEVEL% NEQ 0 (
+    echo [!] C compilation failed for hex_utils.c!
+    goto error
+) else (
+    echo     - hex_utils.c compiled
+)
+
+rem Link
 echo [+] Linking object files...
 set LINK_OBJS=
 if exist "%CHECKSUM_OBJ%" set LINK_OBJS=%LINK_OBJS% "%CHECKSUM_OBJ%"
 if exist "%SCAN_OBJ%" set LINK_OBJS=%LINK_OBJS% "%SCAN_OBJ%"
+if exist "%BUILD_DIR%\exploit_real.obj" set LINK_OBJS=%LINK_OBJS% "%BUILD_DIR%\exploit_real.obj"
+if exist "%BUILD_DIR%\aircraft_satellite.obj" set LINK_OBJS=%LINK_OBJS% "%BUILD_DIR%\aircraft_satellite.obj"
+if exist "%BUILD_DIR%\industrial_control.obj" set LINK_OBJS=%LINK_OBJS% "%BUILD_DIR%\industrial_control.obj"
+if exist "%BUILD_DIR%\drone_warfare.obj" set LINK_OBJS=%LINK_OBJS% "%BUILD_DIR%\drone_warfare.obj"
+if exist "%BUILD_DIR%\hackrf.obj" set LINK_OBJS=%LINK_OBJS% "%BUILD_DIR%\hackrf.obj"
+if exist "%BUILD_DIR%\hex_utils.obj" set LINK_OBJS=%LINK_OBJS% "%BUILD_DIR%\hex_utils.obj"
 if exist "%MAIN_OBJ%" set LINK_OBJS=%LINK_OBJS% "%MAIN_OBJ%"
 
 link -OUT:"%EXECUTABLE%" %LINK_OBJS% iphlpapi.lib ws2_32.lib shell32.lib /OPT:REF /LTCG
