@@ -195,7 +195,7 @@ resolve_mac_address ENDP
 ; Network interface enumeration
 enumerate_interfaces PROC PUBLIC
     ; Enumerate all network interfaces
-    ; Input: ECX = buffer pointer, EDX = buffer size
+    ; Input: RCX = buffer pointer, RDX = buffer size
     ; Output: EAX = number of interfaces
     
     push rbp
@@ -204,7 +204,12 @@ enumerate_interfaces PROC PUBLIC
     push rsi
     
     ; Use GetAdaptersAddresses for detailed info
-    ; Extract: IP, MAC, interface name, type
+    ; Initialize buffer size
+    push 0               ; Family (0 = all)
+    push 0               ; Flags
+    push rdx             ; Buffer size
+    push rcx             ; Buffer pointer
+    call GetAdaptersAddresses
     
     xor eax, eax
     
@@ -329,7 +334,7 @@ ntohs_custom ENDP
 ; TCP checksum calculation (optimized)
 tcp_checksum PROC PUBLIC
     ; Calculate TCP checksum with pseudo-header
-    ; Input: ECX = source IP, EDX = dest IP, R8 = TCP segment, R9 = length
+    ; Input: RCX = source IP, RDX = dest IP, R8 = TCP segment, R9 = length
     ; Output: EAX = checksum
     
     push rbp
@@ -337,8 +342,12 @@ tcp_checksum PROC PUBLIC
     push rdi
     push rsi
     
-    ; Build pseudo-header: src IP + dest IP + zeros + protocol + TCP length
+    ; Build pseudo-header on stack
+    ; Sum pseudo-header (src IP + dest IP + zeros + protocol + TCP length)
     ; Calculate checksum over pseudo-header + TCP segment
+    
+    ; Use Windows API for checksum calculation
+    ; RtlComputeCrc32 or similar
     
     xor eax, eax
     
@@ -361,6 +370,7 @@ udp_checksum PROC PUBLIC
     push rsi
     
     ; Build pseudo-header and calculate checksum
+    ; Use CNG BCryptGenMAC or similar
     
     xor eax, eax
     
@@ -375,7 +385,7 @@ udp_checksum ENDP
 ; IP header checksum calculation
 ip_checksum PROC PUBLIC
     ; Calculate IP header checksum
-    ; Input: ECX = IP header, EDX = header length
+    ; Input: RCX = IP header, RDX = header length
     ; Output: EAX = checksum
     
     push rbp
@@ -384,6 +394,7 @@ ip_checksum PROC PUBLIC
     push rsi
     
     ; Sum 16-bit words, fold to 16-bit, one's complement
+    ; Use optimized SSE/AVX if available
     
     xor eax, eax
     
@@ -398,7 +409,7 @@ ip_checksum ENDP
 ; Packet fragmentation handling
 handle_fragmentation PROC PUBLIC
     ; Handle IP packet fragmentation
-    ; Input: ECX = packet data, EDX = length
+    ; Input: RCX = packet data, RDX = length
     ; Output: EAX = reassembled length
     
     push rbp
